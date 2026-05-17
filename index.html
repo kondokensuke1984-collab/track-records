@@ -191,7 +191,7 @@ function showSyncBadge(icon) {
 // ── STORAGE ────────────────────────────────────────────────────────────
 function load() {
   try {
-    var d = JSON.parse(localStorage.getItem('trk_v1') || 'null');
+    var d = JSON.parse(localStorage.getItem('trk_v2') || 'null');
     if (d && d.records && d.records.length > 0) {
       S.athletes = d.athletes || []; S.records = d.records || [];
       var nameMap = {'凜乃':'りの','杏莉':'あんり'};
@@ -219,7 +219,7 @@ function load() {
   }, 30000);
 }
 function saveLocal() {
-  localStorage.setItem('trk_v1', JSON.stringify({ athletes: S.athletes, records: S.records }));
+  localStorage.setItem('trk_v2', JSON.stringify({ athletes: S.athletes, records: S.records }));
 }
 function save() {
   saveLocal();
