@@ -160,7 +160,7 @@ function pushToCloud() {
   .then(function(current) {
     if (current) {
       try {
-        var cloudData = JSON.parse(atob(current.content.replace(/\n/g,'')));
+        var cloudData = JSON.parse(decodeURIComponent(escape(atob(current.content.replace(/\n/g,'')))));
         mergeInto(cloudData);
       } catch(e) {}
     }
