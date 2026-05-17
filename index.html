@@ -183,6 +183,16 @@ function load() {
     var evs = getEvents(); if (evs[0]) S.gEv = evs[0];
   } catch(e) {}
   syncFromCloud();
+  setInterval(function() {
+    fetch(BLOB_URL, { headers: { 'Accept': 'application/json' } })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(cloud) {
+        if (!cloud) return;
+        var changed = mergeInto(cloud);
+        if (changed) { saveLocal(); renderPg(); showSyncBadge('✓'); }
+      })
+      .catch(function(){});
+  }, 30000);
 }
 function saveLocal() {
   localStorage.setItem('trk_v1', JSON.stringify({ athletes: S.athletes, records: S.records }));
