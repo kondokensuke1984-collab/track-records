@@ -110,7 +110,7 @@ var S = {
   records: [],
   tab: 'add',
   selAth: null,
-  fAth: 'all', fEv: 'all',
+  fAth: 'all', fEv: 'all', fSort: 'desc',
   gAth: '', gEv: '',
   selEv: '', showNewEv: false,
 };
@@ -275,6 +275,7 @@ document.addEventListener('click', function(e) {
     case 'add-rec':  addRec();          break;
     case 'set-fa':   setFA(param);      break;
     case 'set-fe':   setFE(param);      break;
+    case 'set-fs':   setFS(param);      break;
     case 'del-rec':  delRec(param);     break;
     case 'csv':      exportCSV();       break;
     case 'reset':        resetAll();           break;
@@ -483,7 +484,12 @@ function addRec() {
 // ── LIST TAB ───────────────────────────────────────────────────────────
 function tabList() {
   var evs = getEvents();
-  var rs = S.records.slice().sort(function(a, b){ return b.date < a.date ? -1 : b.date > a.date ? 1 : 0; });
+  var rs = S.records.slice().sort(function(a, b){
+    var d = S.fSort === 'asc'
+      ? (a.date < b.date ? -1 : a.date > b.date ? 1 : 0)
+      : (b.date < a.date ? -1 : b.date > a.date ? 1 : 0);
+    return d;
+  });
   if (S.fAth !== 'all') rs = rs.filter(function(r){ return r.athleteId === S.fAth; });
   if (S.fEv  !== 'all') rs = rs.filter(function(r){ return r.event === S.fEv; });
 
@@ -516,10 +522,15 @@ function tabList() {
         '</div>';
       }).join('');
 
+  var sortChips =
+    '<button class="chip' + (S.fSort === 'desc' ? ' on' : '') + '" data-action="set-fs" data-param="desc">新しい順</button>' +
+    '<button class="chip' + (S.fSort === 'asc'  ? ' on' : '') + '" data-action="set-fs" data-param="asc">古い順</button>';
+
   return '<div class="stitle">記録一覧</div>' +
     '<div class="ssub">合計 ' + S.records.length + ' 件の記録</div>' +
     '<div class="chips">' + achips + '</div>' +
     '<div class="chips">' + echips + '</div>' +
+    '<div class="chips">' + sortChips + '</div>' +
     '<div class="card">' + rows + '</div>' +
     '<div style="display:flex;gap:12px;padding:0 0 16px;justify-content:center">' +
       '<button class="link-btn" data-action="csv">📥 CSVエクスポート</button>' +
@@ -529,6 +540,7 @@ function tabList() {
 
 function setFA(v) { S.fAth = v; renderPg(); }
 function setFE(v) { S.fEv  = v; renderPg(); }
+function setFS(v) { S.fSort = v; renderPg(); }
 
 function delRec(id) {
   if (!confirm('この記録を削除しますか？')) return;
