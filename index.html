@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>陸上記録</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1e3a8a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="陸上記録">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --blue:#2563eb;--blue-light:#dbeafe;--red:#ef4444;--green:#10b981;
+  --bg:#f1f5f9;--card:#fff;--text:#1e293b;--muted:#64748b;--border:#e2e8f0;
+  --nav:64px;--safe:env(safe-area-inset-bottom,0px);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:calc(var(--nav) + var(--safe))}
+.hdr{background:var(--blue);color:#fff;padding:14px 16px 10px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15);display:flex;align-items:center;gap:10px}
+.hdr h1{font-size:19px;font-weight:700}
+.bnav{position:fixed;bottom:0;left:0;right:0;height:calc(var(--nav) + var(--safe));padding-bottom:var(--safe);background:#fff;border-top:1px solid var(--border);display:flex;z-index:100;box-shadow:0 -2px 10px rgba(0,0,0,.07)}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;color:var(--muted);font-size:10px;font-weight:600;border:none;background:none;padding:8px 2px;transition:color .15s}
+.ni.on{color:var(--blue)}
+.ni svg{width:22px;height:22px}
+.pg{padding:14px 14px 0;max-width:560px;margin:0 auto}
+.card{background:var(--card);border-radius:14px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.lbl{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.inp{width:100%;padding:12px 14px;border:2px solid var(--border);border-radius:10px;font-size:16px;color:var(--text);background:var(--bg);transition:border-color .2s;-webkit-appearance:none}
+.inp:focus{outline:none;border-color:var(--blue);background:#fff}
+.fg{margin-bottom:14px}
+.hint{font-size:12px;color:var(--muted);margin-top:4px}
+.btn{width:100%;padding:14px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;-webkit-appearance:none;transition:opacity .15s,transform .1s}
+.btn:active{opacity:.88;transform:scale(.99)}
+.asel{display:flex;gap:8px}
+.abtn{flex:1;padding:12px 6px;border:2px solid var(--border);border-radius:10px;font-size:15px;font-weight:700;background:var(--bg);cursor:pointer;transition:all .2s;text-align:center;-webkit-appearance:none}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{padding:6px 14px;border:none;border-radius:20px;font-size:13px;font-weight:500;white-space:nowrap;cursor:pointer;background:#e2e8f0;color:var(--muted);transition:all .15s}
+.chip.on{background:var(--blue-light);color:var(--blue);font-weight:700}
+.ri{display:flex;align-items:center;padding:11px 0;border-bottom:1px solid var(--border)}
+.ri:last-child{border-bottom:none}
+.rdot{width:9px;height:9px;border-radius:50%;margin-right:11px;flex-shrink:0}
+.rinfo{flex:1;min-width:0}
+.rev{font-weight:600;font-size:15px;display:flex;align-items:center;gap:6px}
+.rath{font-size:12px;color:var(--muted);margin-top:1px}
+.rtm{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+.rdt{font-size:11px;color:var(--muted);text-align:right}
+.pb{background:#fef9c3;border-radius:4px;font-size:10px;font-weight:700;color:#854d0e;padding:1px 5px}
+.del{padding:6px 8px;background:none;border:none;color:var(--red);font-size:20px;cursor:pointer;opacity:.5;line-height:1}
+.del:active{opacity:1}
+.brow{display:flex;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)}
+.brow:last-child{border-bottom:none}
+.bname{flex:1;font-size:14px;font-weight:700}
+.btm{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;margin-right:10px}
+.bdt{font-size:11px;color:var(--muted)}
+.evhdr{font-size:16px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.stats{display:flex;gap:10px;margin-bottom:12px}
+.stc{flex:1;background:var(--card);border-radius:12px;padding:13px 8px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.stv{font-size:26px;font-weight:800;color:var(--blue)}
+.stl{font-size:11px;color:var(--muted);margin-top:1px}
+.gsel{display:flex;gap:8px;margin-bottom:10px}
+.gsel select{flex:1;padding:10px 32px 10px 12px;border:2px solid var(--border);border-radius:10px;font-size:14px;background:#fff;color:var(--text);-webkit-appearance:none;background-image:url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");background-repeat:no-repeat;background-position:right 8px center;background-size:20px}
+.gsel select:focus{outline:none;border-color:var(--blue)}
+.ctnr{position:relative;height:260px}
+.stitle{font-size:18px;font-weight:700;margin-bottom:2px}
+.ssub{font-size:13px;color:var(--muted);margin-bottom:14px}
+.empty{text-align:center;padding:50px 20px;color:var(--muted)}
+.eico{font-size:48px;margin-bottom:10px}
+.toast{position:fixed;bottom:calc(var(--nav) + var(--safe) + 14px);left:50%;transform:translateX(-50%) translateY(16px);background:#1e293b;color:#fff;padding:10px 20px;border-radius:20px;font-size:14px;font-weight:500;opacity:0;transition:all .25s;pointer-events:none;white-space:nowrap;z-index:300}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.setup{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:var(--bg)}
+.sico{font-size:72px;margin-bottom:12px;text-align:center}
+.stit{font-size:26px;font-weight:800;text-align:center;margin-bottom:6px}
+.ssub2{font-size:15px;color:var(--muted);text-align:center;margin-bottom:28px}
+.scard{background:#fff;border-radius:18px;padding:24px;width:100%;max-width:380px;box-shadow:0 4px 24px rgba(0,0,0,.09)}
+.errmsg{font-size:13px;color:var(--red);margin-top:6px;display:none}
+.link-btn{font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;text-decoration:underline;padding:2px 0}
+.ev-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.ev-chip{padding:10px 4px;border:2px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;text-align:center;cursor:pointer;background:var(--bg);transition:all .15s;-webkit-appearance:none;border-style:solid}
+.ev-chip.on{border-color:var(--blue);background:var(--blue-light);color:var(--blue)}
+.ev-chip.new-ev{border-style:dashed;color:var(--muted)}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:400;display:flex;align-items:flex-end;justify-content:center}
+.modal{background:#fff;border-radius:20px 20px 0 0;width:100%;max-width:560px;padding:20px 20px calc(20px + var(--safe));max-height:85vh;overflow-y:auto}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.modal-title{font-size:18px;font-weight:700}
+.modal-close{font-size:26px;background:none;border:none;cursor:pointer;color:var(--muted);line-height:1;padding:0 4px}
+.ath-row{display:flex;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.ath-row:last-child{border-bottom:none}
+.ath-dot{width:12px;height:12px;border-radius:50%;margin-right:12px;flex-shrink:0}
+.ath-name{flex:1;font-size:15px;font-weight:600}
+.ath-cnt{font-size:12px;color:var(--muted);margin-right:10px}
+.icon-btn{background:none;border:none;cursor:pointer;font-size:18px;padding:4px;opacity:.6}
+.icon-btn:active{opacity:1}
+.add-ath-form{margin-top:14px;display:flex;gap:8px}
+.add-ath-form .inp{flex:1;margin:0}
+.add-ath-form .sbtn{padding:12px 16px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────
+var S = {
+  athletes: [],
+  records: [],
+  tab: 'add',
+  selAth: null,
+  fAth: 'all', fEv: 'all',
+  gAth: '', gEv: '',
+  selEv: '', showNewEv: false,
+};
+var COLORS = ['#2563eb', '#ef4444', '#10b981', '#f59e0b'];
+var SEED = {"athletes":[{"id":"a1","name":"りの","color":"#2563eb"},{"id":"a2","name":"あんり","color":"#ef4444"},],"records":[{"id":"19e2fde55f8ce32","athleteId":"a1","event":"50m","date":"2025-04-26","time":9.2,"note":""},{"id":"19e2fde55f8e5f3","athleteId":"a1","event":"50m","date":"2025-04-29","time":8.84,"note":""},{"id":"19e2fde55f8d5fc","athleteId":"a1","event":"300m","date":"2025-04-29","time":67.27,"note":""},{"id":"19e2fde55f88eb2","athleteId":"a1","event":"60m","date":"2025-05-10","time":11.1,"note":""},{"id":"19e2fde55f8b024","athleteId":"a1","event":"100m","date":"2025-05-19","time":18.45,"note":""},{"id":"19e2fde55f8293e","athleteId":"a1","event":"100m","date":"2025-05-24","time":18.92,"note":""},{"id":"19e2fde55f84fd0","athleteId":"a1","event":"300m","date":"2025-06-08","time":61,"note":""},{"id":"19e2fde55f82ad0","athleteId":"a1","event":"120m","date":"2025-06-08","time":21.97,"note":""},{"id":"19e2fde55f8a1f6","athleteId":"a1","event":"50m","date":"2025-06-15","time":8.58,"note":""},{"id":"19e2fde55f8ecd3","athleteId":"a1","event":"60m","date":"2025-06-15","time":10.6,"note":""},{"id":"19e2fde55f8fb21","athleteId":"a1","event":"100m","date":"2025-06-15","time":17.51,"note":""},{"id":"19e2fde55f87225","athleteId":"a1","event":"400m","date":"2025-06-15","time":103.55,"note":""},{"id":"19e2fde55f83534","athleteId":"a1","event":"120m","date":"2025-06-22","time":21.45,"note":""},{"id":"19e2fde55f87e9e","athleteId":"a1","event":"100m","date":"2025-06-29","time":17.34,"note":"江東区陸上選手権"},{"id":"19e2fde55f8fd2d","athleteId":"a1","event":"100m","date":"2025-07-05","time":18.96,"note":""},{"id":"19e2fde55f8042d","athleteId":"a1","event":"40mハードル","date":"2025-07-05","time":10.03,"note":""},{"id":"19e2fde55f8a03c","athleteId":"a1","event":"40mハードル","date":"2025-07-13","time":8.7,"note":""},{"id":"19e2fde55f8bad2","athleteId":"a1","event":"40mハードル","date":"2025-07-19","time":8.82,"note":""},{"id":"19e2fde55f8671a","athleteId":"a1","event":"60mハードル","date":"2025-07-20","time":15.85,"note":"日清食品カップ東京都小学生陸上"},{"id":"19e2fde55f85411","athleteId":"a1","event":"ジャベリック","date":"2025-07-20","time":9.73,"note":"日清食品カップ東京都小学生陸上"},{"id":"19e2fde55f869ae","athleteId":"a1","event":"40mハードル","date":"2025-07-27","time":9.77,"note":""},{"id":"19e2fde55f84c93","athleteId":"a1","event":"40mハードル","date":"2025-08-06","time":8.16,"note":"ファール"},{"id":"19e2fde55f8435d","athleteId":"a1","event":"60mハードル","date":"2025-08-24","time":15.37,"note":"板橋ジュニア夏季記録会"},{"id":"19e2fde55f859d1","athleteId":"a1","event":"走り幅跳び","date":"2025-08-24","time":2.42,"note":"板橋ジュニア夏季記録会"},{"id":"19e2fde55f88a5e","athleteId":"a1","event":"40mハードル","date":"2025-08-31","time":8.39,"note":""},{"id":"19e2fde55f82a6f","athleteId":"a1","event":"走り幅跳び","date":"2025-09-07","time":2.87,"note":"キッズコロシアム（公認2m70）"},{"id":"19e2fde55f83d36","athleteId":"a1","event":"60mハードル","date":"2025-09-07","time":13.49,"note":"キッズコロシアム"},{"id":"19e2fde55f8161b","athleteId":"a1","event":"120m","date":"2025-09-28","time":20.5,"note":""},{"id":"19e2fde55f86365","athleteId":"a1","event":"1000m","date":"2025-09-28","time":262,"note":""},{"id":"19e2fde55f81f7c","athleteId":"a1","event":"200m","date":"2025-10-05","time":35.7,"note":""},{"id":"19e2fde55f8fc5d","athleteId":"a1","event":"800m","date":"2025-10-05","time":194,"note":""},{"id":"19e2fde55f8ccc6","athleteId":"a1","event":"200m","date":"2025-10-13","time":35.5,"note":""},{"id":"19e2fde55f84a7c","athleteId":"a1","event":"800m","date":"2025-10-13","time":207,"note":""},{"id":"19e2fde55f8b781","athleteId":"a1","event":"400m","date":"2025-10-18","time":87.99,"note":""},{"id":"19e2fde55f88bdb","athleteId":"a1","event":"1000m","date":"2025-10-18","time":260,"note":""},{"id":"19e2fde55f8753c","athleteId":"a1","event":"60mハードル","date":"2025-10-25","time":15.24,"note":"ジュニアオリンピック"},{"id":"19e2fde55f889cb","athleteId":"a1","event":"走り幅跳び","date":"2025-10-26","time":2.81,"note":""},{"id":"19e2fde55f8ea9a","athleteId":"a1","event":"400m","date":"2025-11-02","time":87,"note":""},{"id":"19e2fde55f85682","athleteId":"a1","event":"60mハードル","date":"2025-11-03","time":14.11,"note":"板橋少年少女陸上"},{"id":"19e2fde55f8e69f","athleteId":"a1","event":"走り幅跳び","date":"2025-11-03","time":2.76,"note":"板橋少年少女陸上"},{"id":"19e2fde55f8ce3c","athleteId":"a1","event":"120m","date":"2025-11-08","time":21.0,"note":""},{"id":"19e2fde55f85a1e","athleteId":"a1","event":"300m","date":"2025-11-16","time":58.0,"note":""},{"id":"19e2fde55f87af0","athleteId":"a1","event":"1000m","date":"2025-11-16","time":268,"note":""},{"id":"19e2fde55f8a7a6","athleteId":"a1","event":"300m","date":"2025-11-22","time":61,"note":""},{"id":"19e2fde55f8e399","athleteId":"a1","event":"1000m","date":"2025-11-22","time":262,"note":""},{"id":"19e2fde55f831b8","athleteId":"a1","event":"120m","date":"2025-12-07","time":18.0,"note":"平均"},{"id":"19e2fde55f83712","athleteId":"a1","event":"400m","date":"2025-12-07","time":90,"note":""},{"id":"19e2fde55f845b0","athleteId":"a1","event":"400m","date":"2025-12-20","time":85,"note":""},{"id":"19e2fde55f89cda","athleteId":"a1","event":"40mハードル","date":"2025-12-21","time":7.88,"note":"KMC記録会"},{"id":"19e2fde55f88c3a","athleteId":"a1","event":"走り幅跳び","date":"2025-12-21","time":3.08,"note":"KMC記録会"},{"id":"19e2fde55f820b0","athleteId":"a1","event":"30m","date":"2025-12-21","time":5.05,"note":"KMC記録会"},{"id":"19e2fde55f85c02","athleteId":"a1","event":"60m","date":"2025-12-21","time":9.83,"note":"KMC記録会"},{"id":"19e2fde55f8e2a0","athleteId":"a1","event":"100m","date":"2025-12-21","time":16.56,"note":"KMC記録会"},{"id":"19e2fde55f8c2a7","athleteId":"a1","event":"800m","date":"2025-12-21","time":194,"note":"KMC記録会"},{"id":"19e2fde55f99e31","athleteId":"a1","event":"800m","date":"2026-01-04","time":197,"note":""},{"id":"19e2fde55f9dea3","athleteId":"a1","event":"100m","date":"2026-01-07","time":18.65,"note":"ケンケン陸上"},{"id":"19e2fde55f93730","athleteId":"a1","event":"50m","date":"2026-01-07","time":9.88,"note":"ケンケン陸上"},{"id":"19e2fde55f943d1","athleteId":"a1","event":"300m","date":"2026-01-07","time":64,"note":"ケンケン陸上"},{"id":"19e2fde55f919cb","athleteId":"a1","event":"1500m","date":"2026-01-07","time":420,"note":"ケンケン陸上"},{"id":"19e2fde55f918ab","athleteId":"a1","event":"200m","date":"2026-01-11","time":39.4,"note":"平均"},{"id":"19e2fde55f9df5b","athleteId":"a1","event":"300m","date":"2026-01-31","time":57.35,"note":"1本目（他57.83 / 59.15）"},{"id":"19e2fde55f9a9be","athleteId":"a1","event":"1000m","date":"2026-02-08","time":260,"note":""},{"id":"19e2fde55f99c03","athleteId":"a1","event":"600m","date":"2026-02-08","time":150,"note":""},{"id":"19e2fde55f9b913","athleteId":"a1","event":"300m","date":"2026-02-14","time":80.0,"note":"1本目（2本目85秒）"},{"id":"19e2fde55f9fc6f","athleteId":"a1","event":"800m","date":"2026-02-21","time":195,"note":""},{"id":"19e2fde55f9c499","athleteId":"a1","event":"200m","date":"2026-02-21","time":35.08,"note":""},{"id":"19e2fde55f989f0","athleteId":"a1","event":"1000m","date":"2026-03-01","time":244,"note":""},{"id":"19e2fde55f96196","athleteId":"a1","event":"600m","date":"2026-03-01","time":141,"note":""},{"id":"19e2fde55f9878c","athleteId":"a1","event":"1000m","date":"2026-03-07","time":252,"note":""},{"id":"19e2fde55f99dd3","athleteId":"a1","event":"120m","date":"2026-03-15","time":19.5,"note":""},{"id":"19e2fde55f92a19","athleteId":"a1","event":"300m","date":"2026-03-15","time":57.1,"note":""},{"id":"19e2fde55f9231f","athleteId":"a1","event":"120m","date":"2026-03-21","time":19.66,"note":""},{"id":"19e2fde55f9fde5","athleteId":"a1","event":"120m","date":"2026-04-05","time":19.55,"note":""},{"id":"19e2fde55f97dd8","athleteId":"a1","event":"60mハードル","date":"2026-04-12","time":11.92,"note":""},{"id":"19e2fde55f9ccba","athleteId":"a1","event":"120m","date":"2026-04-12","time":19.94,"note":""},{"id":"19e2fde55f98c09","athleteId":"a1","event":"100m","date":"2026-04-18","time":15.96,"note":""},{"id":"19e2fde55f9868c","athleteId":"a1","event":"60mハードル","date":"2026-04-19","time":12.21,"note":""},{"id":"19e2fde55f9b89e","athleteId":"a2","event":"50m","date":"2025-04-26","time":10.58,"note":""},{"id":"19e2fde55f910f6","athleteId":"a2","event":"50m","date":"2025-04-29","time":10.5,"note":""},{"id":"19e2fde55f99df6","athleteId":"a2","event":"300m","date":"2025-04-29","time":83.99,"note":""},{"id":"19e2fde55f9ffc5","athleteId":"a2","event":"60m","date":"2025-05-10","time":12.52,"note":""},{"id":"19e2fde55f98eda","athleteId":"a2","event":"100m","date":"2025-05-19","time":20.11,"note":""},{"id":"19e2fde55f9954f","athleteId":"a2","event":"100m","date":"2025-05-24","time":21.73,"note":""},{"id":"19e2fde55f965cc","athleteId":"a2","event":"300m","date":"2025-06-08","time":73.61,"note":""},{"id":"19e2fde55f97602","athleteId":"a2","event":"120m","date":"2025-06-08","time":26.41,"note":""},{"id":"19e2fde55f9be37","athleteId":"a2","event":"50m","date":"2025-06-15","time":9.79,"note":""},{"id":"19e2fde55f9585a","athleteId":"a2","event":"60m","date":"2025-06-15","time":12.1,"note":""},{"id":"19e2fde55f99e39","athleteId":"a2","event":"400m","date":"2025-06-15","time":110.5,"note":""},{"id":"19e2fde55f9ae33","athleteId":"a2","event":"120m","date":"2025-06-22","time":25.36,"note":""},{"id":"19e2fde55f99db5","athleteId":"a2","event":"30m","date":"2025-06-28","time":6.48,"note":""},{"id":"19e2fde55f95724","athleteId":"a2","event":"50m","date":"2025-06-29","time":9.83,"note":"江東区陸上選手権"},{"id":"19e2fde55f9f8e1","athleteId":"a2","event":"100m","date":"2025-07-05","time":21.47,"note":""},{"id":"19e2fde55f982b1","athleteId":"a2","event":"30m","date":"2025-07-13","time":6.22,"note":""},{"id":"19e2fde55f960f0","athleteId":"a2","event":"60m","date":"2025-07-19","time":11.94,"note":""},{"id":"19e2fde55f96668","athleteId":"a2","event":"走り幅跳び","date":"2025-07-19","time":2.05,"note":""},{"id":"19e2fde55f969d7","athleteId":"a2","event":"60m","date":"2025-07-20","time":12.72,"note":"日清食品カップ東京都小学生陸上"},{"id":"19e2fde55f91c2d","athleteId":"a2","event":"走り幅跳び","date":"2025-07-20","time":2.02,"note":"日清食品カップ東京都小学生陸上"},{"id":"19e2fde55f90002","athleteId":"a2","event":"120m","date":"2025-07-27","time":24.36,"note":""},{"id":"19e2fde55f98c5c","athleteId":"a2","event":"60m","date":"2025-08-24","time":11.86,"note":"板橋ジュニア夏季記録会"},{"id":"19e2fde55f91bee","athleteId":"a2","event":"ジャベリック","date":"2025-08-24","time":5.99,"note":"板橋ジュニア夏季記録会"},{"id":"19e2fde55f9dd22","athleteId":"a2","event":"50m","date":"2025-08-31","time":9.67,"note":""},{"id":"19e2fde55f95230","athleteId":"a2","event":"60m","date":"2025-09-07","time":11.67,"note":"キッズコロシアム"},{"id":"19e2fde55f94085","athleteId":"a2","event":"ジャベリック","date":"2025-09-07","time":8.83,"note":"キッズコロシアム"},{"id":"19e2fde55f9747a","athleteId":"a2","event":"200m","date":"2025-10-05","time":41.56,"note":""},{"id":"19e2fde55f9ed78","athleteId":"a2","event":"800m","date":"2025-10-05","time":226,"note":""},{"id":"19e2fde55f93e2d","athleteId":"a2","event":"200m","date":"2025-10-13","time":42.14,"note":""},{"id":"19e2fde55f96a1a","athleteId":"a2","event":"800m","date":"2025-10-13","time":230,"note":""},{"id":"19e2fde55f9a959","athleteId":"a2","event":"400m","date":"2025-10-18","time":99.23,"note":""},{"id":"19e2fde55f9f654","athleteId":"a2","event":"1000m","date":"2025-10-18","time":290,"note":""},{"id":"19e2fde55f9dbf6","athleteId":"a2","event":"60m","date":"2025-10-25","time":11.71,"note":"ジュニアオリンピック"},{"id":"19e2fde55f9cc9b","athleteId":"a2","event":"走り幅跳び","date":"2025-10-26","time":2.46,"note":""},{"id":"19e2fde55f92bf5","athleteId":"a2","event":"400m","date":"2025-11-02","time":102,"note":""},{"id":"19e2fde55f9876a","athleteId":"a2","event":"60m","date":"2025-11-03","time":11.75,"note":"板橋少年少女陸上"},{"id":"19e2fde55f90361","athleteId":"a2","event":"走り幅跳び","date":"2025-11-03","time":2.25,"note":"板橋少年少女陸上"},{"id":"19e2fde55f9cde1","athleteId":"a2","event":"120m","date":"2025-11-08","time":26.0,"note":""},{"id":"19e2fde55f99ce9","athleteId":"a2","event":"300m","date":"2025-11-16","time":68,"note":""},{"id":"19e2fde55f9353f","athleteId":"a2","event":"1000m","date":"2025-11-16","time":283,"note":""},{"id":"19e2fde55f958b9","athleteId":"a2","event":"300m","date":"2025-11-22","time":69,"note":""},{"id":"19e2fde55f950d9","athleteId":"a2","event":"1000m","date":"2025-11-22","time":284,"note":""},{"id":"19e2fde55f9e18d","athleteId":"a2","event":"120m","date":"2025-12-07","time":22.0,"note":"平均"},{"id":"19e2fde55f9f855","athleteId":"a2","event":"400m","date":"2025-12-07","time":111,"note":""},{"id":"19e2fde55f92752","athleteId":"a2","event":"400m","date":"2025-12-20","time":97,"note":""},{"id":"19e2fde55f916e4","athleteId":"a2","event":"40mハードル","date":"2025-12-21","time":10.23,"note":"KMC記録会"},{"id":"19e2fde55f9f296","athleteId":"a2","event":"走り幅跳び","date":"2025-12-21","time":2.76,"note":"KMC記録会"},{"id":"19e2fde55f961f4","athleteId":"a2","event":"30m","date":"2025-12-21","time":5.78,"note":"KMC記録会"},{"id":"19e2fde55f9fb82","athleteId":"a2","event":"60m","date":"2025-12-21","time":11.39,"note":"KMC記録会"},{"id":"19e2fde55f92ef9","athleteId":"a2","event":"100m","date":"2025-12-21","time":19.06,"note":"KMC記録会"},{"id":"19e2fde55f90eff","athleteId":"a2","event":"800m","date":"2025-12-21","time":221,"note":"KMC記録会"},{"id":"19e2fde55f9bb75","athleteId":"a2","event":"800m","date":"2026-01-04","time":205,"note":""},{"id":"19e2fde55f97457","athleteId":"a2","event":"50m","date":"2026-01-07","time":10.89,"note":"ケンケン陸上"},{"id":"19e2fde55f9ebbe","athleteId":"a2","event":"300m","date":"2026-01-07","time":74,"note":"ケンケン陸上"},{"id":"19e2fde55f9b07f","athleteId":"a2","event":"1500m","date":"2026-01-07","time":469,"note":"ケンケン陸上"},{"id":"19e2fde55f946d8","athleteId":"a2","event":"200m","date":"2026-01-11","time":45.5,"note":"平均"},{"id":"19e2fde55f9faf4","athleteId":"a2","event":"300m","date":"2026-01-31","time":69,"note":"2本目（他1:11 / 1:11.49）"},{"id":"19e2fde55f9be4a","athleteId":"a2","event":"1000m","date":"2026-02-08","time":301,"note":""},{"id":"19e2fde55f9dd32","athleteId":"a2","event":"800m","date":"2026-02-21","time":209,"note":""},{"id":"19e2fde55f90e44","athleteId":"a2","event":"200m","date":"2026-02-21","time":41.96,"note":""},{"id":"19e2fde55f954b9","athleteId":"a2","event":"1000m","date":"2026-03-01","time":265,"note":""},{"id":"19e2fde55f987ff","athleteId":"a2","event":"600m","date":"2026-03-01","time":157,"note":""},{"id":"19e2fde55f9fed5","athleteId":"a2","event":"1マイル","date":"2026-03-08","time":444,"note":"立川シティマラソン"},{"id":"19e2fde55f9cfe7","athleteId":"a2","event":"120m","date":"2026-03-15","time":21.65,"note":""},{"id":"19e2fde55f997a1","athleteId":"a2","event":"120m","date":"2026-03-21","time":22.0,"note":""},{"id":"19e2fde55f9ee57","athleteId":"a2","event":"120m","date":"2026-04-05","time":21.54,"note":""},{"id":"19e2fde55f95217","athleteId":"a2","event":"30m","date":"2026-04-12","time":5.59,"note":""},{"id":"19e2fde55f94300","athleteId":"a2","event":"120m","date":"2026-04-12","time":21.64,"note":""},{"id":"19e2fde55f9138e","athleteId":"a2","event":"30m","date":"2026-04-19","time":6.06,"note":""},{"id":"19e2fde55f96834","athleteId":"a2","event":"120m","date":"2026-04-19","time":21.72,"note":""},{"id":"19e2ff4dc4ca9f7","athleteId":"a1","event":"300m","date":"2026-04-26","time":58.38,"note":""},{"id":"19e2ff4dc4c9fa5","athleteId":"a1","event":"60mハードル","date":"2026-04-26","time":12.12,"note":""},{"id":"19e2ff4dc4c4877","athleteId":"a1","event":"100m","date":"2026-04-29","time":16.67,"note":"第3回東京ジュニアユーストラックレース"},{"id":"19e2ff4dc4ce15e","athleteId":"a1","event":"走り幅跳び","date":"2026-04-29","time":3.12,"note":"第3回東京ジュニアユーストラックレース"},{"id":"19e2ff4dc4c37e5","athleteId":"a1","event":"40mハードル","date":"2026-05-04","time":7.71,"note":""},{"id":"19e2ff4dc4ccbc9","athleteId":"a1","event":"100m","date":"2026-05-06","time":16.86,"note":"チャレンジカップ"},{"id":"19e2ff4dc4c8e1d","athleteId":"a1","event":"40mハードル","date":"2026-05-09","time":7.53,"note":"ファール（最新の投稿）"},{"id":"19e2ff4dc4ca27f","athleteId":"a2","event":"300m","date":"2026-04-26","time":65,"note":""},{"id":"19e2ff4dc4c444f","athleteId":"a2","event":"60m","date":"2026-04-26","time":10.58,"note":""},{"id":"19e2ff4dc4c80df","athleteId":"a2","event":"100m","date":"2026-04-29","time":18.07,"note":"第3回東京ジュニアユーストラックレース"},{"id":"19e2ff4dc4c18fc","athleteId":"a2","event":"走り幅跳び","date":"2026-04-29","time":2.53,"note":"第3回東京ジュニアユーストラックレース"},{"id":"19e2ff4dc4c90aa","athleteId":"a2","event":"120m","date":"2026-05-04","time":22.76,"note":""},{"id":"19e2ff4dc4c571e","athleteId":"a2","event":"60m","date":"2026-05-05","time":10.88,"note":"チャレンジカップ（電気計時）"},{"id":"19e2ff4dc4cfe65","athleteId":"a2","event":"走り幅跳び","date":"2026-05-06","time":2.56,"note":"チャレンジカップ"},{"id":"19e2ff4dc4c676b","athleteId":"a2","event":"50m","date":"2026-05-09","time":9.11,"note":"最新の投稿"},{"id":"19e2ff4dc4cf823","athleteId":"a2","event":"100m","date":"2026-05-09","time":18.23,"note":"最新の投稿"}]};
+
+// ── CLOUD SYNC ─────────────────────────────────────────────────────────
+var BLOB_URL = 'https://jsonblob.com/api/jsonBlob/019e33ce-9102-7951-9678-51a80f2ab080';
+var _syncTimer = null;
+
+function mergeInto(src) {
+  if (!src || !src.records) return false;
+  var changed = false;
+  var ids = {}; S.records.forEach(function(r){ ids[r.id]=1; });
+  (src.records||[]).forEach(function(r){ if(!ids[r.id]){ S.records.push(r); changed=true; } });
+  var aids = {}; S.athletes.forEach(function(a){ aids[a.id]=1; });
+  (src.athletes||[]).forEach(function(a){ if(!aids[a.id]){ S.athletes.push(a); changed=true; } });
+  return changed;
+}
+
+function syncFromCloud() {
+  fetch(BLOB_URL, { headers: { 'Accept': 'application/json' } })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(cloud) {
+      if (!cloud) return;
+      var changed = mergeInto(cloud);
+      if (changed) { saveLocal(); render(); }
+      showSyncBadge('✓');
+    })
+    .catch(function(){ showSyncBadge('?'); });
+}
+
+function pushToCloud() {
+  showSyncBadge('↑');
+  fetch(BLOB_URL, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify({ athletes: S.athletes, records: S.records })
+  })
+  .then(function(r){ showSyncBadge(r.ok ? '✓' : '!'); })
+  .catch(function(){ showSyncBadge('!'); });
+}
+
+function showSyncBadge(icon) {
+  var el = document.getElementById('syncBadge');
+  if (!el) return;
+  el.textContent = '☁' + icon;
+  el.style.opacity = '1';
+  clearTimeout(_syncTimer);
+  if (icon === '✓') { _syncTimer = setTimeout(function(){ el.style.opacity='0.3'; }, 3000); }
+}
+
+// ── STORAGE ────────────────────────────────────────────────────────────
+function load() {
+  try {
+    var d = JSON.parse(localStorage.getItem('trk_v1') || 'null');
+    if (d && d.records && d.records.length > 0) {
+      S.athletes = d.athletes || []; S.records = d.records || [];
+      var nameMap = {'凜乃':'りの','杏莉':'あんり'};
+      S.athletes.forEach(function(a){ if(nameMap[a.name]) a.name=nameMap[a.name]; });
+      S.athletes = S.athletes.filter(function(a){ return a.name !== 'パパ' && a.id !== 'a3'; });
+      S.records  = S.records.filter(function(r){ return r.athleteId !== 'a3'; });
+      var ids = {}; S.records.forEach(function(r){ ids[r.id]=1; });
+      SEED.records.forEach(function(r){ if(!ids[r.id]) S.records.push(r); });
+      var aids = {}; S.athletes.forEach(function(a){ aids[a.id]=1; });
+      SEED.athletes.forEach(function(a){ if(!aids[a.id]) S.athletes.push(a); });
+      saveLocal();
+    } else { S.athletes = SEED.athletes; S.records = SEED.records; saveLocal(); }
+    if (S.athletes[0]) { S.selAth = S.athletes[0].id; S.gAth = S.athletes[0].id; }
+    var evs = getEvents(); if (evs[0]) S.gEv = evs[0];
+  } catch(e) {}
+  syncFromCloud();
+}
+function saveLocal() {
+  localStorage.setItem('trk_v1', JSON.stringify({ athletes: S.athletes, records: S.records }));
+}
+function save() {
+  saveLocal();
+  pushToCloud();
+}
+
+// ── HELPERS ────────────────────────────────────────────────────────────
+function parseTm(s) {
+  s = (s || '').trim(); if (!s) return null;
+  var c = s.indexOf(':');
+  if (c !== -1) {
+    var m = parseInt(s, 10), sec = parseFloat(s.slice(c + 1));
+    return (isNaN(m) || isNaN(sec)) ? null : m * 60 + sec;
+  }
+  var v = parseFloat(s); return isNaN(v) ? null : v;
+}
+function fmtTm(t) {
+  if (t == null) return '--';
+  if (t >= 60) { var m = Math.floor(t / 60), s = (t - m * 60).toFixed(2).padStart(5, '0'); return m + ':' + s; }
+  return t.toFixed(2);
+}
+function fmtDate(s) { var d = new Date(s + 'T00:00:00'); return (d.getMonth()+1) + '/' + d.getDate(); }
+function fmtDateFull(s) { var d = new Date(s + 'T00:00:00'); return d.getFullYear() + '/' + (d.getMonth()+1) + '/' + d.getDate(); }
+function today() { return new Date().toISOString().split('T')[0]; }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+function ath(id) { return S.athletes.find(function(a){ return a.id === id; }); }
+function eventOrder(ev) {
+  var m = ev.match(/^(\d+)/);
+  if (m) return parseInt(m[1]);
+  if (ev.indexOf('マイル') !== -1) return 1600;
+  return 99999;
+}
+function getEvents() {
+  return Array.from(new Set(S.records.map(function(r){ return r.event; })))
+    .sort(function(a, b) {
+      var d = eventOrder(a) - eventOrder(b);
+      return d !== 0 ? d : a.localeCompare(b, 'ja');
+    });
+}
+var FIELD_EVENTS = ['走り幅跳び','走り高跳び','立ち幅跳び','ジャベリック','砲丸投げ','円盤投げ','やり投げ'];
+var GOALS = {
+  'a1': {
+    '30m':4.88,'50m':7.95,'60m':9.16,'100m':14.98,'120m':18.50,
+    '200m':33.50,'300m':54.99,'400m':76.87,'600m':133,'800m':179,
+    '1000m':244,'1500m':380,'2000m':530,'3000m':820,
+    '40mハードル':6.97,'60mハードル':11.99,'走り幅跳び':3.50,
+  },
+  'a2': {
+    '30m':5.27,'50m':8.58,'60m':10.00,'100m':17.50,'120m':21.49,
+    '200m':38.50,'300m':59,'400m':95,'600m':144,'800m':202,
+    '1000m':262,'1500m':410,'2000m':570,'3000m':890,
+    '40mハードル':9.00,'60mハードル':14.20,'走り幅跳び':3.00,'ジャベリック':11.55,
+  }
+};
+function isField(ev) { return FIELD_EVENTS.some(function(f){ return ev.indexOf(f) !== -1; }); }
+function getPB(aId, ev) {
+  var rs = S.records.filter(function(r){ return r.athleteId === aId && r.event === ev; });
+  if (!rs.length) return null;
+  return isField(ev)
+    ? rs.reduce(function(b, r){ return r.time > b.time ? r : b; }, rs[0])
+    : rs.reduce(function(b, r){ return r.time < b.time ? r : b; }, rs[0]);
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── TOAST ──────────────────────────────────────────────────────────────
+function toast(msg) {
+  var t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 2200);
+}
+
+// ── EVENT DELEGATION ───────────────────────────────────────────────────
+document.addEventListener('click', function(e) {
+  var el = e.target.closest('[data-action]');
+  if (!el) return;
+  var action = el.getAttribute('data-action');
+  var param  = el.getAttribute('data-param') || '';
+  switch (action) {
+    case 'setup':    doSetup();         break;
+    case 'sw':       sw(param);         break;
+    case 'sel-ath':  selAth(param);     break;
+    case 'sel-ev':   selEv(param);      break;
+    case 'new-ev':   toggleNewEv();     break;
+    case 'add-rec':  addRec();          break;
+    case 'set-fa':   setFA(param);      break;
+    case 'set-fe':   setFE(param);      break;
+    case 'del-rec':  delRec(param);     break;
+    case 'csv':      exportCSV();       break;
+    case 'reset':        resetAll();           break;
+    case 'open-settings': openSettings();       break;
+    case 'close-settings': closeSettings();     break;
+    case 'del-ath':      delAth(param);         break;
+    case 'add-ath':      addAth();              break;
+  }
+});
+document.addEventListener('change', function(e) {
+  if (e.target.id === 'gsa' || e.target.id === 'gse') updG();
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && e.target.id === 'n1') doSetup();
+  if (e.key === 'Enter' && e.target.id === 'it') addRec();
+});
+
+// ── SETUP ──────────────────────────────────────────────────────────────
+function renderSetup() {
+  document.getElementById('app').innerHTML =
+    '<div class="setup">' +
+      '<div class="sico">🏃</div>' +
+      '<div class="stit">陸上記録アプリ</div>' +
+      '<div class="ssub2">選手の名前を入力してスタート！</div>' +
+      '<div class="scard">' +
+        '<div class="fg">' +
+          '<label class="lbl">選手 1</label>' +
+          '<input class="inp" id="n1" type="text" placeholder="例：たろう" maxlength="10">' +
+          '<div class="errmsg" id="n1err">名前を入力してください</div>' +
+        '</div>' +
+        '<div class="fg">' +
+          '<label class="lbl">選手 2（任意）</label>' +
+          '<input class="inp" id="n2" type="text" placeholder="例：はなこ" maxlength="10">' +
+        '</div>' +
+        '<button class="btn" data-action="setup">はじめる →</button>' +
+      '</div>' +
+    '</div>';
+  setTimeout(function(){ var el = document.getElementById('n1'); if (el) el.focus(); }, 100);
+}
+
+function doSetup() {
+  var n1el = document.getElementById('n1');
+  var n1 = n1el ? n1el.value.trim() : '';
+  var n2el = document.getElementById('n2');
+  var n2 = n2el ? n2el.value.trim() : '';
+  if (!n1) {
+    var err = document.getElementById('n1err');
+    if (err) err.style.display = 'block';
+    if (n1el) { n1el.style.borderColor = 'var(--red)'; n1el.focus(); }
+    return;
+  }
+  S.athletes = [{ id: uid(), name: n1, color: COLORS[0] }];
+  if (n2) S.athletes.push({ id: uid(), name: n2, color: COLORS[1] });
+  S.selAth = S.athletes[0].id;
+  S.gAth   = S.athletes[0].id;
+  save();
+  renderApp();
+}
+
+// ── MAIN SHELL ─────────────────────────────────────────────────────────
+function renderApp() {
+  if (!S.athletes.length) { renderSetup(); return; }
+  var tabs = [
+    ['add', '記録追加', icoPlus()],
+    ['list', '一覧',    icoList()],
+    ['best', 'ベスト',  icoStar()],
+    ['graph','グラフ',  icoGraph()],
+  ];
+  var navHtml = tabs.map(function(t) {
+    return '<button class="ni' + (S.tab === t[0] ? ' on' : '') + '" data-action="sw" data-param="' + t[0] + '">' +
+      t[2] + '<span>' + t[1] + '</span></button>';
+  }).join('');
+  document.getElementById('app').innerHTML =
+    '<div class="hdr"><span style="font-size:22px">🏃</span><h1 style="flex:1">陸上記録</h1>' +
+    '<span id="syncBadge" style="font-size:12px;color:rgba(255,255,255,0.5);margin-right:6px;opacity:0.3;transition:opacity .3s">☁</span>' +
+    '<button data-action="open-settings" style="background:none;border:none;cursor:pointer;color:#fff;font-size:22px;padding:4px">⚙️</button></div>' +
+    '<div class="pg" id="pg"></div>' +
+    '<nav class="bnav">' + navHtml + '</nav>';
+  renderPg();
+}
+
+function sw(tab) {
+  S.tab = tab;
+  document.querySelectorAll('.ni').forEach(function(el, i) {
+    el.classList.toggle('on', ['add','list','best','graph'][i] === tab);
+  });
+  renderPg();
+}
+
+function renderPg() {
+  var el = document.getElementById('pg'); if (!el) return;
+  if      (S.tab === 'add')   { el.innerHTML = tabAdd();   }
+  else if (S.tab === 'list')  { el.innerHTML = tabList();  }
+  else if (S.tab === 'best')  { el.innerHTML = tabBest();  }
+  else                        { el.innerHTML = tabGraph(); drawChart(); }
+}
+
+// ── ADD TAB ────────────────────────────────────────────────────────────
+function tabAdd() {
+  var evs = getEvents();
+  var athHtml = S.athletes.map(function(a) {
+    var on = S.selAth === a.id;
+    var style = on ? 'border-color:' + a.color + ';background:' + a.color + '22;color:' + a.color : '';
+    return '<button class="abtn" data-action="sel-ath" data-param="' + a.id + '" style="' + style + '">' + esc(a.name) + '</button>';
+  }).join('');
+  var evGrid = evs.map(function(ev) {
+    var on = S.selEv === ev;
+    return '<button class="ev-chip' + (on ? ' on' : '') + '" data-action="sel-ev" data-param="' + esc(ev) + '">' + esc(ev) + '</button>';
+  }).join('');
+  evGrid += '<button class="ev-chip new-ev" data-action="new-ev">＋ その他</button>';
+  var newEvHtml = S.showNewEv
+    ? '<div style="margin-top:8px"><input class="inp" id="ie" type="text" placeholder="種目名を入力" autocomplete="off"></div>'
+    : '';
+  return '<div class="stitle">記録を追加</div>' +
+    '<div class="ssub">今週の練習タイムを記録しよう</div>' +
+    '<div class="card">' +
+      '<div class="fg"><label class="lbl">選手</label><div class="asel">' + athHtml + '</div></div>' +
+      '<div class="fg"><label class="lbl">種目</label>' +
+        '<div class="ev-grid">' + evGrid + '</div>' + newEvHtml + '</div>' +
+      '<div class="fg"><label class="lbl">日付</label>' +
+        '<input class="inp" id="id" type="date" value="' + today() + '"></div>' +
+      '<div class="fg"><label class="lbl">タイム / 記録</label>' +
+        '<div style="display:flex;align-items:center;gap:6px">' +
+          '<input class="inp" id="it-m" type="number" inputmode="numeric" min="0" placeholder="分" style="width:80px;text-align:center">' +
+          '<span style="font-size:20px;font-weight:700;color:var(--muted)">:</span>' +
+          '<input class="inp" id="it-s" type="number" inputmode="decimal" min="0" step="0.01" placeholder="秒" style="flex:1;text-align:center">' +
+        '</div>' +
+        '<div class="hint">短距離は秒だけ入力。長距離は分と秒を両方入力。幅跳び等はメートルを秒欄に入力</div></div>' +
+      '<div class="fg"><label class="lbl">備考（任意）</label>' +
+        '<input class="inp" id="inote" type="text" placeholder="例：大会名、コンディションなど" maxlength="50"></div>' +
+      '<button class="btn" data-action="add-rec">記録を保存</button>' +
+    '</div>';
+}
+
+function selEv(ev) {
+  S.selEv = ev;
+  S.showNewEv = false;
+  document.querySelectorAll('.ev-chip:not(.new-ev)').forEach(function(btn) {
+    btn.classList.toggle('on', btn.getAttribute('data-param') === ev);
+  });
+  var newInp = document.getElementById('ie');
+  if (newInp) newInp.closest('div').remove();
+}
+
+function toggleNewEv() {
+  S.showNewEv = !S.showNewEv;
+  S.selEv = '';
+  document.querySelectorAll('.ev-chip:not(.new-ev)').forEach(function(btn) { btn.classList.remove('on'); });
+  var area = document.querySelector('.ev-grid').parentElement;
+  var existing = document.getElementById('ie');
+  if (S.showNewEv && !existing) {
+    var d = document.createElement('div');
+    d.style.marginTop = '8px';
+    d.innerHTML = '<input class="inp" id="ie" type="text" placeholder="種目名を入力" autocomplete="off">';
+    area.appendChild(d);
+    document.getElementById('ie').focus();
+  } else if (!S.showNewEv && existing) {
+    existing.closest('div').remove();
+  }
+}
+
+function selAth(id) {
+  S.selAth = id;
+  document.querySelectorAll('.abtn').forEach(function(btn) {
+    var bid = btn.getAttribute('data-param');
+    var a = ath(bid);
+    if (!a) return;
+    var on = bid === id;
+    btn.style.cssText = on ? 'border-color:' + a.color + ';background:' + a.color + '22;color:' + a.color : '';
+  });
+}
+
+function addRec() {
+  var iel = document.getElementById('ie'), idel = document.getElementById('id');
+  var itml = document.getElementById('it-m'), itsl = document.getElementById('it-s');
+  var ev = S.selEv || (iel ? iel.value.trim() : '');
+  var dt = idel ? idel.value : '';
+  var mVal = itml && itml.value !== '' ? parseFloat(itml.value) : 0;
+  var sVal = itsl && itsl.value !== '' ? parseFloat(itsl.value) : null;
+  var tm = sVal !== null ? mVal * 60 + sVal : null;
+  if (!ev) { toast('種目を入力してください'); return; }
+  if (!dt) { toast('日付を入力してください'); return; }
+  if (tm === null) { toast('タイムを正しく入力してください'); return; }
+  if (!S.selAth) { toast('選手を選んでください'); return; }
+  var notel = document.getElementById('inote');
+  var note = notel ? notel.value.trim() : '';
+  var prev = getPB(S.selAth, ev);
+  var isPB = !prev || (isField(ev) ? tm > prev.time : tm < prev.time);
+  S.records.push({ id: uid(), athleteId: S.selAth, event: ev, date: dt, time: tm, note: note });
+  save();
+  if (iel) iel.value = '';
+  if (itml) itml.value = '';
+  if (itsl) itsl.value = '';
+  if (notel) notel.value = '';
+  if (idel) idel.value = today();
+  S.selEv = ''; S.showNewEv = false;
+  renderPg();
+  // update datalist
+  var dl = document.getElementById('evlist');
+  if (dl && !dl.querySelector('option[value="' + ev + '"]')) {
+    var o = document.createElement('option'); o.value = ev; dl.appendChild(o);
+  }
+  toast(isPB ? '🎉 自己ベスト更新！ ' + fmtTm(tm) : '✅ 記録を保存しました');
+}
+
+// ── LIST TAB ───────────────────────────────────────────────────────────
+function tabList() {
+  var evs = getEvents();
+  var rs = S.records.slice().sort(function(a, b){ return b.date < a.date ? -1 : b.date > a.date ? 1 : 0; });
+  if (S.fAth !== 'all') rs = rs.filter(function(r){ return r.athleteId === S.fAth; });
+  if (S.fEv  !== 'all') rs = rs.filter(function(r){ return r.event === S.fEv; });
+
+  var pbSet = new Set();
+  S.athletes.forEach(function(a){ evs.forEach(function(ev){ var p = getPB(a.id, ev); if (p) pbSet.add(p.id); }); });
+
+  function mkChip(param, lbl, on, action) {
+    return '<button class="chip' + (on ? ' on' : '') + '" data-action="' + action + '" data-param="' + esc(param) + '">' + esc(lbl) + '</button>';
+  }
+  var achips = mkChip('all', '全員', S.fAth === 'all', 'set-fa') +
+    S.athletes.map(function(a){ return mkChip(a.id, a.name, S.fAth === a.id, 'set-fa'); }).join('');
+  var echips = mkChip('all', '全種目', S.fEv === 'all', 'set-fe') +
+    evs.map(function(ev){ return mkChip(ev, ev, S.fEv === ev, 'set-fe'); }).join('');
+
+  var rows = rs.length === 0
+    ? '<div class="empty"><div class="eico">📋</div>記録がありません</div>'
+    : rs.map(function(r) {
+        var a = ath(r.athleteId);
+        return '<div class="ri">' +
+          '<div class="rdot" style="background:' + (a ? a.color : '#999') + '"></div>' +
+          '<div class="rinfo">' +
+            '<div class="rev">' + esc(r.event) + (pbSet.has(r.id) ? '<span class="pb">PB</span>' : '') + '</div>' +
+            '<div class="rath">' + esc(a ? a.name : '?') + (r.note ? ' ・ ' + esc(r.note) : '') + '</div>' +
+          '</div>' +
+          '<div style="text-align:right;margin-right:4px">' +
+            '<div class="rtm">' + fmtTm(r.time) + '</div>' +
+            '<div class="rdt">' + fmtDateFull(r.date) + '</div>' +
+          '</div>' +
+          '<button class="del" data-action="del-rec" data-param="' + r.id + '">×</button>' +
+        '</div>';
+      }).join('');
+
+  return '<div class="stitle">記録一覧</div>' +
+    '<div class="ssub">合計 ' + S.records.length + ' 件の記録</div>' +
+    '<div class="chips">' + achips + '</div>' +
+    '<div class="chips">' + echips + '</div>' +
+    '<div class="card">' + rows + '</div>' +
+    '<div style="display:flex;gap:12px;padding:0 0 16px;justify-content:center">' +
+      '<button class="link-btn" data-action="csv">📥 CSVエクスポート</button>' +
+      '<button class="link-btn" style="color:#ef4444" data-action="reset">🗑 データをリセット</button>' +
+    '</div>';
+}
+
+function setFA(v) { S.fAth = v; renderPg(); }
+function setFE(v) { S.fEv  = v; renderPg(); }
+
+function delRec(id) {
+  if (!confirm('この記録を削除しますか？')) return;
+  S.records = S.records.filter(function(r){ return r.id !== id; });
+  save(); renderPg();
+}
+
+function exportCSV() {
+  var rows = [['選手','種目','日付','タイム(秒)','タイム(表示)','備考']];
+  S.records.slice().sort(function(a,b){ return a.date < b.date ? -1 : 1; }).forEach(function(r) {
+    var a = ath(r.athleteId);
+    rows.push([a ? a.name : '', r.event, r.date, r.time.toFixed(3), fmtTm(r.time), r.note || '']);
+  });
+  var csv = rows.map(function(r){ return r.map(function(c){ return '"' + String(c).replace(/"/g,'""') + '"'; }).join(','); }).join('\n');
+  var b = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+  var a = document.createElement('a'); a.href = URL.createObjectURL(b);
+  a.download = '陸上記録_' + today() + '.csv'; a.click();
+}
+
+function resetAll() {
+  if (!confirm('すべての記録を削除しますか？この操作は元に戻せません。')) return;
+  if (!confirm('本当に全削除しますか？')) return;
+  S.records = []; save(); renderPg(); toast('リセットしました');
+}
+
+// ── BEST TAB ───────────────────────────────────────────────────────────
+function tabBest() {
+  var evs = getEvents();
+  if (!evs.length) return '<div class="stitle">自己ベスト</div>' +
+    '<div class="empty" style="margin-top:40px"><div class="eico">🏅</div>まだ記録がありません<br>記録を追加してみよう！</div>';
+
+  var thisWeek = S.records.filter(function(r){ return (Date.now() - new Date(r.date+'T00:00:00')) / 86400000 < 7; }).length;
+  var statsHtml =
+    '<div class="stats">' +
+      '<div class="stc"><div class="stv">' + S.records.length + '</div><div class="stl">総記録数</div></div>' +
+      '<div class="stc"><div class="stv">' + evs.length + '</div><div class="stl">種目数</div></div>' +
+      '<div class="stc"><div class="stv">' + thisWeek + '</div><div class="stl">今週の記録</div></div>' +
+    '</div>';
+  var medals = ['🥇','🥈','🥉'];
+  var evCards = evs.map(function(ev) {
+    var bests = S.athletes.map(function(a){ return { a: a, pb: getPB(a.id, ev) }; })
+      .filter(function(x){ return x.pb; })
+      .sort(function(x, y){ return isField(ev) ? y.pb.time - x.pb.time : x.pb.time - y.pb.time; });
+    if (!bests.length) return '';
+    var rowsHtml = bests.map(function(item, i) {
+      var goal = GOALS[item.a.id] && GOALS[item.a.id][ev] != null ? GOALS[item.a.id][ev] : null;
+      var goalHtml = '';
+      if (goal != null) {
+        var achieved = isField(ev) ? item.pb.time >= goal : item.pb.time <= goal;
+        var diff = isField(ev) ? item.pb.time - goal : goal - item.pb.time;
+        if (achieved) {
+          goalHtml = '<span style="font-size:11px;background:#dcfce7;color:#166534;border-radius:6px;padding:2px 6px;font-weight:700">✅ 達成</span>';
+        } else {
+          var diffStr = isField(ev)
+            ? 'あと' + Math.abs(diff).toFixed(2) + 'm'
+            : 'あと' + fmtTm(Math.abs(diff));
+          goalHtml = '<div style="font-size:11px;color:var(--muted);margin-top:2px">目標 ' + fmtTm(goal) + ' <span style="color:#f59e0b;font-weight:600">(' + diffStr + ')</span></div>';
+        }
+      }
+      return '<div class="brow">' +
+        '<span style="margin-right:10px;font-size:18px">' + (medals[i] || '▪') + '</span>' +
+        '<div class="bname" style="color:' + item.a.color + '">' + esc(item.a.name) + '</div>' +
+        '<div style="text-align:right"><div class="btm">' + fmtTm(item.pb.time) + '</div><div class="bdt">' + fmtDateFull(item.pb.date) + '</div>' + goalHtml + '</div>' +
+      '</div>';
+    }).join('');
+    return '<div class="card"><div class="evhdr"><span>🏃</span><span>' + esc(ev) + '</span></div>' + rowsHtml + '</div>';
+  }).join('');
+
+  return '<div class="stitle">自己ベスト</div><div class="ssub">各種目の最高記録</div>' + statsHtml + evCards;
+}
+
+// ── GRAPH TAB ──────────────────────────────────────────────────────────
+var chart = null;
+
+function tabGraph() {
+  var evs = getEvents();
+  if (!S.gAth && S.athletes[0]) S.gAth = S.athletes[0].id;
+  if (!S.gEv && evs[0]) S.gEv = evs[0];
+  var athOpts = S.athletes.map(function(a){
+    return '<option value="' + a.id + '"' + (S.gAth === a.id ? ' selected' : '') + '>' + esc(a.name) + '</option>';
+  }).join('') + '<option value="all"' + (S.gAth === 'all' ? ' selected' : '') + '>全員比較</option>';
+  var evOpts = evs.length
+    ? evs.map(function(ev){ return '<option value="' + esc(ev) + '"' + (S.gEv === ev ? ' selected' : '') + '>' + esc(ev) + '</option>'; }).join('')
+    : '<option value="">種目なし</option>';
+  return '<div class="stitle">タイム推移</div><div class="ssub">記録の変化をグラフで確認</div>' +
+    '<div class="gsel">' +
+      '<select id="gsa">' + athOpts + '</select>' +
+      '<select id="gse">' + evOpts + '</select>' +
+    '</div>' +
+    '<div class="card"><div class="ctnr"><canvas id="gc"></canvas></div></div>';
+}
+
+function updG() {
+  var sa = document.getElementById('gsa'), se = document.getElementById('gse');
+  if (sa) S.gAth = sa.value;
+  if (se) S.gEv  = se.value;
+  drawChart();
+}
+
+function drawChart() {
+  var cv = document.getElementById('gc'); if (!cv) return;
+  if (chart) { chart.destroy(); chart = null; }
+  var ev = S.gEv; if (!ev) return;
+  var aths = S.gAth === 'all' ? S.athletes : S.athletes.filter(function(a){ return a.id === S.gAth; });
+  var datasets = aths.map(function(a) {
+    var rs = S.records.filter(function(r){ return r.athleteId === a.id && r.event === ev; })
+      .sort(function(x, y){ return x.date < y.date ? -1 : 1; });
+    var byDate = {};
+    rs.forEach(function(r){ if (!byDate[r.date] || r.time < byDate[r.date]) byDate[r.date] = r.time; });
+    return {
+      label: a.name,
+      data: Object.keys(byDate).sort().map(function(x){ return { x: x, y: byDate[x] }; }),
+      borderColor: a.color, backgroundColor: a.color + '25',
+      pointBackgroundColor: a.color, pointRadius: 6, pointHoverRadius: 9,
+      tension: .25, fill: false,
+    };
+  });
+  var hasData = datasets.some(function(d){ return d.data.length > 0; });
+  if (!hasData) {
+    cv.parentElement.innerHTML = '<div class="empty"><div class="eico">📈</div>この種目の記録がありません</div>';
+    return;
+  }
+  var allDates = Array.from(new Set(datasets.reduce(function(acc, d){ return acc.concat(d.data.map(function(p){ return p.x; })); }, []))).sort();
+
+  // 目標ライン（りのの目標がある場合、全員表示 or りのを選択中のみ）
+  var showGoalFor = aths.filter(function(a){ return GOALS[a.id] && GOALS[a.id][ev] != null; });
+  showGoalFor.forEach(function(a) {
+    var goalVal = GOALS[a.id][ev];
+    datasets.push({
+      label: a.name + ' 目標',
+      data: allDates.map(function(x){ return { x: x, y: goalVal }; }),
+      borderColor: a.color, backgroundColor: 'transparent',
+      borderDash: [6, 4], borderWidth: 2,
+      pointRadius: 0, pointHoverRadius: 0,
+      tension: 0, fill: false,
+    });
+  });
+
+  chart = new Chart(cv, {
+    type: 'line', data: { datasets: datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: aths.length > 1 || showGoalFor.length > 0, position: 'top' },
+        tooltip: { callbacks: { label: function(c){ return c.dataset.label + ': ' + fmtTm(c.parsed.y); } } },
+      },
+      scales: {
+        x: { type: 'category', labels: allDates,
+          ticks: { font: { size: 11 }, callback: function(_, i){ return fmtDate(allDates[i]); } },
+          grid: { display: false } },
+        y: { ticks: { font: { size: 11 }, callback: function(v){ return fmtTm(v); } },
+          title: { display: true, text: 'タイム（秒）', font: { size: 11 }, color: '#64748b' } },
+      },
+      animation: { duration: 350 },
+    },
+  });
+}
+
+// ── SETTINGS MODAL ────────────────────────────────────────────────────
+function openSettings() {
+  var existing = document.getElementById('modal-overlay');
+  if (existing) return;
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'modal-overlay';
+  overlay.innerHTML = renderSettingsModal();
+  document.body.appendChild(overlay);
+  // close on backdrop tap
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) closeSettings();
+  });
+}
+
+function renderSettingsModal() {
+  var rows = S.athletes.map(function(a) {
+    var cnt = S.records.filter(function(r){ return r.athleteId === a.id; }).length;
+    return '<div class="ath-row">' +
+      '<div class="ath-dot" style="background:' + a.color + '"></div>' +
+      '<div class="ath-name">' + esc(a.name) + '</div>' +
+      '<div class="ath-cnt">' + cnt + '件</div>' +
+      '<button class="icon-btn" data-action="del-ath" data-param="' + a.id + '" title="削除">🗑</button>' +
+    '</div>';
+  }).join('');
+  return '<div class="modal">' +
+    '<div class="modal-hdr">' +
+      '<div class="modal-title">選手の管理</div>' +
+      '<button class="modal-close" data-action="close-settings">×</button>' +
+    '</div>' +
+    '<div id="ath-list">' + rows + '</div>' +
+    (S.athletes.length < 4
+      ? '<div class="add-ath-form">' +
+          '<input class="inp" id="new-ath-name" type="text" placeholder="新しい選手の名前" maxlength="10">' +
+          '<button class="sbtn" data-action="add-ath">追加</button>' +
+        '</div>'
+      : '<div style="font-size:13px;color:var(--muted);margin-top:12px;text-align:center">選手は最大4人まで登録できます</div>'
+    ) +
+  '</div>';
+}
+
+function closeSettings() {
+  var el = document.getElementById('modal-overlay');
+  if (el) el.remove();
+}
+
+function addAth() {
+  var inp = document.getElementById('new-ath-name');
+  var name = inp ? inp.value.trim() : '';
+  if (!name) { inp && (inp.style.borderColor = 'var(--red)'); inp && inp.focus(); return; }
+  var usedColors = S.athletes.map(function(a){ return a.color; });
+  var color = COLORS.find(function(c){ return !usedColors.includes(c); }) || COLORS[0];
+  S.athletes.push({ id: uid(), name: name, color: color });
+  save();
+  // refresh modal content
+  var overlay = document.getElementById('modal-overlay');
+  if (overlay) overlay.innerHTML = renderSettingsModal();
+  // refresh main UI if on add tab (athlete buttons need updating)
+  renderPg();
+}
+
+function delAth(id) {
+  var a = ath(id);
+  if (!a) return;
+  var cnt = S.records.filter(function(r){ return r.athleteId === id; }).length;
+  var msg = cnt > 0
+    ? a.name + ' の記録が ' + cnt + ' 件あります。選手ごと削除しますか？'
+    : a.name + ' を削除しますか？';
+  if (!confirm(msg)) return;
+  S.records = S.records.filter(function(r){ return r.athleteId !== id; });
+  S.athletes = S.athletes.filter(function(a){ return a.id !== id; });
+  if (S.selAth === id) S.selAth = S.athletes[0] ? S.athletes[0].id : null;
+  if (S.gAth   === id) S.gAth   = S.athletes[0] ? S.athletes[0].id : '';
+  save();
+  if (!S.athletes.length) { closeSettings(); renderApp(); return; }
+  var overlay = document.getElementById('modal-overlay');
+  if (overlay) overlay.innerHTML = renderSettingsModal();
+  renderPg();
+}
+
+// ── ICONS ──────────────────────────────────────────────────────────────
+function icoPlus()  { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>'; }
+function icoList()  { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r=".5" fill="currentColor"/><circle cx="3" cy="12" r=".5" fill="currentColor"/><circle cx="3" cy="18" r=".5" fill="currentColor"/></svg>'; }
+function icoStar()  { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'; }
+function icoGraph() { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>'; }
+
+// ── INIT ───────────────────────────────────────────────────────────────
+load();
+renderApp();
+</script>
+</body>
+</html>
