@@ -248,6 +248,30 @@ function fmtTm(t) {
   if (t >= 60) { var m = Math.floor(t / 60), s = (t - m * 60).toFixed(2).padStart(5, '0'); return m + ':' + s; }
   return t.toFixed(2);
 }
+var DIST_EVENTS = ['走り幅跳び', '走り高跳び', 'ジャベリック'];
+function isDistEvent(ev) { return DIST_EVENTS.indexOf(ev) !== -1; }
+function fmtDist(v) {
+  if (v == null) return '--';
+  var m = Math.floor(v);
+  var cm = Math.round((v - m) * 100);
+  return m + 'm' + String(cm).padStart(2, '0');
+}
+function fmtRec(t, ev) { return isDistEvent(ev) ? fmtDist(t) : fmtTm(t); }
+function buildTmInputHtml(ev) {
+  if (isDistEvent(ev)) {
+    return '<div style="display:flex;align-items:center;gap:6px">' +
+      '<input class="inp" id="it-dm" type="number" inputmode="numeric" min="0" placeholder="m" style="flex:1;text-align:center">' +
+      '<span style="font-size:20px;font-weight:700;color:var(--muted)">m</span>' +
+      '<input class="inp" id="it-dcm" type="number" inputmode="numeric" min="0" max="99" placeholder="cm" style="flex:1;text-align:center">' +
+      '<span style="font-size:20px;font-weight:700;color:var(--muted)">cm</span>' +
+      '</div><div class="hint">メートルとセンチメートルを入力（例：3m12cm）</div>';
+  }
+  return '<div style="display:flex;align-items:center;gap:6px">' +
+    '<input class="inp" id="it-m" type="number" inputmode="numeric" min="0" placeholder="分" style="width:80px;text-align:center">' +
+    '<span style="font-size:20px;font-weight:700;color:var(--muted)">:</span>' +
+    '<input class="inp" id="it-s" type="number" inputmode="decimal" min="0" step="0.01" placeholder="秒" style="flex:1;text-align:center">' +
+    '</div><div class="hint">短距離は秒だけ入力。長距離は分と秒を両方入力。</div>';
+}
 function fmtDate(s) { var d = new Date(s + 'T00:00:00'); return (d.getMonth()+1) + '/' + d.getDate(); }
 function fmtDateFull(s) { var d = new Date(s + 'T00:00:00'); return d.getFullYear() + '/' + (d.getMonth()+1) + '/' + d.getDate(); }
 function today() { return new Date().toISOString().split('T')[0]; }
@@ -438,13 +462,7 @@ function tabAdd() {
         '<div class="ev-grid">' + evGrid + '</div>' + newEvHtml + '</div>' +
       '<div class="fg"><label class="lbl">日付</label>' +
         '<input class="inp" id="id" type="date" value="' + today() + '"></div>' +
-      '<div class="fg"><label class="lbl">タイム / 記録</label>' +
-        '<div style="display:flex;align-items:center;gap:6px">' +
-          '<input class="inp" id="it-m" type="number" inputmode="numeric" min="0" placeholder="分" style="width:80px;text-align:center">' +
-          '<span style="font-size:20px;font-weight:700;color:var(--muted)">:</span>' +
-          '<input class="inp" id="it-s" type="number" inputmode="decimal" min="0" step="0.01" placeholder="秒" style="flex:1;text-align:center">' +
-        '</div>' +
-        '<div class="hint">短距離は秒だけ入力。長距離は分と秒を両方入力。幅跳び等はメートルを秒欄に入力</div></div>' +
+      '<div class="fg" id="rec-tm-area"><label class="lbl">タイム / 記録</label>' + buildTmInputHtml(S.selEv) + '</div>' +
       '<div class="fg"><label class="lbl">備考（任意）</label>' +
         '<input class="inp" id="inote" type="text" placeholder="例：大会名、コンディションなど" maxlength="50"></div>' +
       '<button class="btn" data-action="add-rec">記録を保存</button>' +
@@ -459,6 +477,8 @@ function selEv(ev) {
   });
   var newInp = document.getElementById('ie');
   if (newInp) newInp.closest('div').remove();
+  var area = document.getElementById('rec-tm-area');
+  if (area) area.innerHTML = '<label class="lbl">タイム / 記録</label>' + buildTmInputHtml(ev);
 }
 
 function toggleNewEv() {
@@ -494,9 +514,17 @@ function addRec() {
   var itml = document.getElementById('it-m'), itsl = document.getElementById('it-s');
   var ev = S.selEv || (iel ? iel.value.trim() : '');
   var dt = idel ? idel.value : '';
-  var mVal = itml && itml.value !== '' ? parseFloat(itml.value) : 0;
-  var sVal = itsl && itsl.value !== '' ? parseFloat(itsl.value) : null;
-  var tm = sVal !== null ? mVal * 60 + sVal : null;
+  var tm;
+  if (isDistEvent(ev)) {
+    var dmel = document.getElementById('it-dm'), dcmel = document.getElementById('it-dcm');
+    var dm = dmel && dmel.value !== '' ? parseInt(dmel.value, 10) : null;
+    var dcm = dcmel && dcmel.value !== '' ? parseInt(dcmel.value, 10) : 0;
+    tm = dm !== null ? dm + dcm / 100 : null;
+  } else {
+    var mVal = itml && itml.value !== '' ? parseFloat(itml.value) : 0;
+    var sVal = itsl && itsl.value !== '' ? parseFloat(itsl.value) : null;
+    tm = sVal !== null ? mVal * 60 + sVal : null;
+  }
   if (!ev) { toast('種目を入力してください'); return; }
   if (!dt) { toast('日付を入力してください'); return; }
   if (tm === null) { toast('タイムを正しく入力してください'); return; }
@@ -519,7 +547,7 @@ function addRec() {
   if (dl && !dl.querySelector('option[value="' + ev + '"]')) {
     var o = document.createElement('option'); o.value = ev; dl.appendChild(o);
   }
-  toast(isPB ? '🎉 自己ベスト更新！ ' + fmtTm(tm) : '✅ 記録を保存しました');
+  toast(isPB ? '🎉 自己ベスト更新！ ' + fmtRec(tm, ev) : '✅ 記録を保存しました');
 }
 
 // ── LIST TAB ───────────────────────────────────────────────────────────
@@ -556,7 +584,7 @@ function tabList() {
             '<div class="rath">' + esc(a ? a.name : '?') + (r.note ? ' ・ ' + esc(r.note) : '') + '</div>' +
           '</div>' +
           '<div style="text-align:right;margin-right:4px">' +
-            '<div class="rtm">' + fmtTm(r.time) + '</div>' +
+            '<div class="rtm">' + fmtRec(r.time, r.event) + '</div>' +
             '<div class="rdt">' + fmtDateFull(r.date) + '</div>' +
           '</div>' +
           '<button class="del" data-action="del-rec" data-param="' + r.id + '">×</button>' +
@@ -638,14 +666,14 @@ function tabBest() {
         } else {
           var diffStr = isField(ev)
             ? 'あと' + Math.abs(diff).toFixed(2) + 'm'
-            : 'あと' + fmtTm(Math.abs(diff));
-          goalHtml = '<div style="font-size:11px;color:var(--muted);margin-top:2px">目標 ' + fmtTm(goal) + ' <span style="color:#f59e0b;font-weight:600">(' + diffStr + ')</span></div>';
+            : 'あと' + fmtRec(Math.abs(diff), ev);
+          goalHtml = '<div style="font-size:11px;color:var(--muted);margin-top:2px">目標 ' + fmtRec(goal, ev) + ' <span style="color:#f59e0b;font-weight:600">(' + diffStr + ')</span></div>';
         }
       }
       return '<div class="brow">' +
         '<span style="margin-right:10px;font-size:18px">' + (medals[i] || '▪') + '</span>' +
         '<div class="bname" style="color:' + item.a.color + '">' + esc(item.a.name) + '</div>' +
-        '<div style="text-align:right"><div class="btm">' + fmtTm(item.pb.time) + '</div><div class="bdt">' + fmtDateFull(item.pb.date) + '</div>' + goalHtml + '</div>' +
+        '<div style="text-align:right"><div class="btm">' + fmtRec(item.pb.time, ev) + '</div><div class="bdt">' + fmtDateFull(item.pb.date) + '</div>' + goalHtml + '</div>' +
       '</div>';
     }).join('');
     return '<div class="card"><div class="evhdr"><span>🏃</span><span>' + esc(ev) + '</span></div>' + rowsHtml + '</div>';
@@ -727,14 +755,14 @@ function drawChart() {
       responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { display: aths.length > 1 || showGoalFor.length > 0, position: 'top' },
-        tooltip: { callbacks: { label: function(c){ return c.dataset.label + ': ' + fmtTm(c.parsed.y); } } },
+        tooltip: { callbacks: { label: function(c){ return c.dataset.label + ': ' + fmtRec(c.parsed.y, S.gEv); } } },
       },
       scales: {
         x: { type: 'category', labels: allDates,
           ticks: { font: { size: 11 }, callback: function(_, i){ return fmtDate(allDates[i]); } },
           grid: { display: false } },
-        y: { ticks: { font: { size: 11 }, callback: function(v){ return fmtTm(v); } },
-          title: { display: true, text: 'タイム（秒）', font: { size: 11 }, color: '#64748b' } },
+        y: { ticks: { font: { size: 11 }, callback: function(v){ return fmtRec(v, S.gEv); } },
+          title: { display: true, text: isDistEvent(S.gEv) ? '距離（m）' : 'タイム（秒）', font: { size: 11 }, color: '#64748b' } },
       },
       animation: { duration: 350 },
     },
