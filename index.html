@@ -154,7 +154,7 @@ function pushToCloud() {
       if (cloud) mergeInto(cloud);
       return fetch(BLOB_URL, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        headers: { 'Content-Type': 'text/plain', 'Accept': 'application/json' },
         body: JSON.stringify({ athletes: S.athletes, records: S.records })
       });
     })
