@@ -131,13 +131,17 @@ function mergeInto(src) {
   return changed;
 }
 
+function fetchCloud() {
+  return fetch(BLOB_URL, { headers: { 'Accept': 'application/json' }, cache: 'no-store' })
+    .then(function(r){ return r.ok ? r.json() : null; });
+}
+
 function syncFromCloud() {
-  fetch(BLOB_URL, { headers: { 'Accept': 'application/json' } })
-    .then(function(r){ return r.ok ? r.json() : null; })
+  fetchCloud()
     .then(function(cloud) {
       if (!cloud) return;
       var changed = mergeInto(cloud);
-      if (changed) { saveLocal(); render(); }
+      if (changed) { saveLocal(); renderPg(); }
       showSyncBadge('✓');
     })
     .catch(function(){ showSyncBadge('?'); });
@@ -145,8 +149,7 @@ function syncFromCloud() {
 
 function pushToCloud() {
   showSyncBadge('↑');
-  fetch(BLOB_URL, { headers: { 'Accept': 'application/json' } })
-    .then(function(r){ return r.ok ? r.json() : null; })
+  fetchCloud()
     .then(function(cloud) {
       if (cloud) mergeInto(cloud);
       return fetch(BLOB_URL, {
@@ -189,8 +192,7 @@ function load() {
   } catch(e) {}
   syncFromCloud();
   setInterval(function() {
-    fetch(BLOB_URL, { headers: { 'Accept': 'application/json' } })
-      .then(function(r){ return r.ok ? r.json() : null; })
+    fetchCloud()
       .then(function(cloud) {
         if (!cloud) return;
         var changed = mergeInto(cloud);
