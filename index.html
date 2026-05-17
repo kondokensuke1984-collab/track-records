@@ -108,6 +108,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 var S = {
   athletes: [],
   records: [],
+  deleted: [],
   tab: 'add',
   selAth: null,
   fAth: 'all', fEv: 'all', fSort: 'desc',
@@ -125,8 +126,13 @@ var _syncTimer = null;
 function mergeInto(src) {
   if (!src || !src.records) return false;
   var changed = false;
+  var delSet = {}; S.deleted.forEach(function(id){ delSet[id]=1; });
+  (src.deleted||[]).forEach(function(id){ if(!delSet[id]){ S.deleted.push(id); delSet[id]=1; changed=true; } });
+  var before = S.records.length;
+  S.records = S.records.filter(function(r){ return !delSet[r.id]; });
+  if (S.records.length !== before) changed = true;
   var ids = {}; S.records.forEach(function(r){ ids[r.id]=1; });
-  (src.records||[]).forEach(function(r){ if(!ids[r.id]){ S.records.push(r); changed=true; } });
+  (src.records||[]).forEach(function(r){ if(!ids[r.id] && !delSet[r.id]){ S.records.push(r); changed=true; } });
   var aids = {}; S.athletes.forEach(function(a){ aids[a.id]=1; });
   (src.athletes||[]).forEach(function(a){ if(!aids[a.id]){ S.athletes.push(a); changed=true; } });
   return changed;
@@ -166,7 +172,7 @@ function pushToCloud() {
     }
     var body = {
       message: 'sync',
-      content: btoa(unescape(encodeURIComponent(JSON.stringify({ athletes: S.athletes, records: S.records }))))
+      content: btoa(unescape(encodeURIComponent(JSON.stringify({ athletes: S.athletes, records: S.records, deleted: S.deleted }))))
     };
     if (current && current.sha) body.sha = current.sha;
     return fetch(GH_API, {
@@ -193,13 +199,14 @@ function load() {
   try {
     var d = JSON.parse(localStorage.getItem('trk_v2') || 'null');
     if (d && d.records && d.records.length > 0) {
-      S.athletes = d.athletes || []; S.records = d.records || [];
+      S.athletes = d.athletes || []; S.records = d.records || []; S.deleted = d.deleted || [];
       var nameMap = {'凜乃':'りの','杏莉':'あんり'};
       S.athletes.forEach(function(a){ if(nameMap[a.name]) a.name=nameMap[a.name]; });
       S.athletes = S.athletes.filter(function(a){ return a.name !== 'パパ' && a.id !== 'a3'; });
       S.records  = S.records.filter(function(r){ return r.athleteId !== 'a3'; });
+      var delSet = {}; S.deleted.forEach(function(id){ delSet[id]=1; });
       var ids = {}; S.records.forEach(function(r){ ids[r.id]=1; });
-      SEED.records.forEach(function(r){ if(!ids[r.id]) S.records.push(r); });
+      SEED.records.forEach(function(r){ if(!ids[r.id] && !delSet[r.id]) S.records.push(r); });
       var aids = {}; S.athletes.forEach(function(a){ aids[a.id]=1; });
       SEED.athletes.forEach(function(a){ if(!aids[a.id]) S.athletes.push(a); });
       saveLocal();
@@ -219,7 +226,7 @@ function load() {
   }, 30000);
 }
 function saveLocal() {
-  localStorage.setItem('trk_v2', JSON.stringify({ athletes: S.athletes, records: S.records }));
+  localStorage.setItem('trk_v2', JSON.stringify({ athletes: S.athletes, records: S.records, deleted: S.deleted }));
 }
 function save() {
   saveLocal();
@@ -578,6 +585,7 @@ function setFS(v) { S.fSort = v; renderPg(); }
 
 function delRec(id) {
   if (!confirm('この記録を削除しますか？')) return;
+  S.deleted.push(id);
   S.records = S.records.filter(function(r){ return r.id !== id; });
   save(); renderPg();
 }
