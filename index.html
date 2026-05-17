@@ -342,6 +342,8 @@ document.addEventListener('click', function(e) {
     case 'set-fe':   setFE(param);      break;
     case 'set-fs':   setFS(param);      break;
     case 'del-rec':  delRec(param);     break;
+    case 'edit-rec': editRec(param);    break;
+    case 'save-edit': saveEdit(param);  break;
     case 'csv':      exportCSV();       break;
     case 'reset':        resetAll();           break;
     case 'open-settings': openSettings();       break;
@@ -587,6 +589,7 @@ function tabList() {
             '<div class="rtm">' + fmtRec(r.time, r.event) + '</div>' +
             '<div class="rdt">' + fmtDateFull(r.date) + '</div>' +
           '</div>' +
+          '<button class="del" data-action="edit-rec" data-param="' + r.id + '" style="font-size:15px;margin-right:0">✏</button>' +
           '<button class="del" data-action="del-rec" data-param="' + r.id + '">×</button>' +
         '</div>';
       }).join('');
@@ -616,6 +619,64 @@ function delRec(id) {
   S.deleted.push(id);
   S.records = S.records.filter(function(r){ return r.id !== id; });
   save(); renderPg();
+}
+
+function editRec(id) {
+  var r = S.records.find(function(x){ return x.id === id; });
+  if (!r || document.getElementById('modal-overlay')) return;
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'modal-overlay';
+  var isDist = isDistEvent(r.event);
+  var inputHtml;
+  if (isDist) {
+    var em = Math.floor(r.time), ecm = Math.round((r.time - em) * 100);
+    inputHtml = '<div style="display:flex;align-items:center;gap:6px">' +
+      '<input class="inp" id="edit-dm" type="number" inputmode="numeric" min="0" value="' + em + '" style="flex:1;text-align:center">' +
+      '<span style="font-size:20px;font-weight:700;color:var(--muted)">m</span>' +
+      '<input class="inp" id="edit-dcm" type="number" inputmode="numeric" min="0" max="99" value="' + ecm + '" style="flex:1;text-align:center">' +
+      '<span style="font-size:20px;font-weight:700;color:var(--muted)">cm</span></div>';
+  } else {
+    var emv = r.time >= 60 ? Math.floor(r.time / 60) : '', esv = r.time >= 60 ? (r.time % 60).toFixed(2) : r.time.toFixed(2);
+    inputHtml = '<div style="display:flex;align-items:center;gap:6px">' +
+      '<input class="inp" id="edit-m" type="number" inputmode="numeric" min="0" placeholder="分" value="' + emv + '" style="width:80px;text-align:center">' +
+      '<span style="font-size:20px;font-weight:700;color:var(--muted)">:</span>' +
+      '<input class="inp" id="edit-s" type="number" inputmode="decimal" min="0" step="0.01" value="' + esv + '" style="flex:1;text-align:center"></div>';
+  }
+  overlay.innerHTML = '<div class="modal">' +
+    '<div class="modal-hdr"><div class="modal-title">記録を編集</div>' +
+    '<button class="modal-close" data-action="close-settings">×</button></div>' +
+    '<div style="font-size:14px;font-weight:700;color:var(--muted);margin-bottom:14px">' + esc(r.event) + '</div>' +
+    '<div class="fg"><label class="lbl">日付</label><input class="inp" id="edit-date" type="date" value="' + r.date + '"></div>' +
+    '<div class="fg"><label class="lbl">タイム / 記録</label>' + inputHtml + '</div>' +
+    '<div class="fg"><label class="lbl">備考（任意）</label><input class="inp" id="edit-note" type="text" value="' + esc(r.note || '') + '" maxlength="50"></div>' +
+    '<button class="btn" data-action="save-edit" data-param="' + id + '">保存</button></div>';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e){ if (e.target === overlay) closeSettings(); });
+}
+
+function saveEdit(id) {
+  var r = S.records.find(function(x){ return x.id === id; });
+  if (!r) return;
+  var dt = (document.getElementById('edit-date') || {}).value;
+  var note = ((document.getElementById('edit-note') || {}).value || '').trim();
+  var tm;
+  if (isDistEvent(r.event)) {
+    var dmel = document.getElementById('edit-dm'), dcmel = document.getElementById('edit-dcm');
+    var dm = dmel && dmel.value !== '' ? parseInt(dmel.value, 10) : null;
+    var dcm = dcmel && dcmel.value !== '' ? parseInt(dcmel.value, 10) : 0;
+    tm = dm !== null ? dm + dcm / 100 : null;
+  } else {
+    var mEl = document.getElementById('edit-m'), sEl = document.getElementById('edit-s');
+    var mv = mEl && mEl.value !== '' ? parseFloat(mEl.value) : 0;
+    var sv = sEl && sEl.value !== '' ? parseFloat(sEl.value) : null;
+    tm = sv !== null ? mv * 60 + sv : null;
+  }
+  if (!dt) { toast('日付を入力してください'); return; }
+  if (tm === null) { toast('タイムを正しく入力してください'); return; }
+  r.date = dt; r.time = tm; r.note = note;
+  closeSettings(); save(); renderPg();
+  toast('✅ 記録を更新しました');
 }
 
 function exportCSV() {
