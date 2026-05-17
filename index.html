@@ -213,9 +213,9 @@ function today() { return new Date().toISOString().split('T')[0]; }
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 function ath(id) { return S.athletes.find(function(a){ return a.id === id; }); }
 function eventOrder(ev) {
+  if (ev.indexOf('マイル') !== -1) return 1600;
   var m = ev.match(/^(\d+)/);
   if (m) return parseInt(m[1]);
-  if (ev.indexOf('マイル') !== -1) return 1600;
   return 99999;
 }
 function getEvents() {
