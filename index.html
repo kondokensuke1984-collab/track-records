@@ -276,7 +276,7 @@ var GOALS = {
 };
 function isField(ev) { return FIELD_EVENTS.some(function(f){ return ev.indexOf(f) !== -1; }); }
 function getPB(aId, ev) {
-  var rs = S.records.filter(function(r){ return r.athleteId === aId && r.event === ev; });
+  var rs = S.records.filter(function(r){ return r.athleteId === aId && r.event === ev && r.note.indexOf('ファール') === -1; });
   if (!rs.length) return null;
   return isField(ev)
     ? rs.reduce(function(b, r){ return r.time > b.time ? r : b; }, rs[0])
