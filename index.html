@@ -95,6 +95,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .ath-cnt{font-size:12px;color:var(--muted);margin-right:10px}
 .icon-btn{background:none;border:none;cursor:pointer;font-size:18px;padding:4px;opacity:.6}
 .icon-btn:active{opacity:1}
+.play-btn{background:none;border:none;cursor:pointer;font-size:15px;padding:4px 6px;opacity:.7;line-height:1;flex-shrink:0}
+.play-btn:active{opacity:1}
 .add-ath-form{margin-top:14px;display:flex;gap:8px}
 .add-ath-form .inp{flex:1;margin:0}
 .add-ath-form .sbtn{padding:12px 16px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap}
@@ -316,6 +318,28 @@ function getPB(aId, ev) {
 function esc(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+function ytId(url) {
+  if (!url) return null;
+  var m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+function openVideoModal(url) {
+  var vid = ytId(url);
+  if (!vid) { toast('動画URLが無効です'); return; }
+  var existing = document.getElementById('modal-overlay');
+  if (existing) existing.remove();
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'modal-overlay';
+  overlay.innerHTML = '<div class="modal">' +
+    '<div class="modal-hdr"><div class="modal-title">📹 大会動画</div>' +
+    '<button class="modal-close" data-action="close-settings">×</button></div>' +
+    '<div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:10px">' +
+    '<iframe style="position:absolute;top:0;left:0;width:100%;height:100%" src="https://www.youtube.com/embed/' + vid + '" frameborder="0" allowfullscreen allow="autoplay;encrypted-media"></iframe>' +
+    '</div></div>';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e){ if (e.target === overlay) closeSettings(); });
+}
 
 // ── TOAST ──────────────────────────────────────────────────────────────
 function toast(msg) {
@@ -344,6 +368,7 @@ document.addEventListener('click', function(e) {
     case 'del-rec':  delRec(param);     break;
     case 'edit-rec': editRec(param);    break;
     case 'save-edit': saveEdit(param);  break;
+    case 'open-video': openVideoModal(param); break;
     case 'csv':      exportCSV();       break;
     case 'reset':        resetAll();           break;
     case 'open-settings': openSettings();       break;
@@ -467,6 +492,8 @@ function tabAdd() {
       '<div class="fg" id="rec-tm-area"><label class="lbl">タイム / 記録</label>' + buildTmInputHtml(S.selEv) + '</div>' +
       '<div class="fg"><label class="lbl">備考（任意）</label>' +
         '<input class="inp" id="inote" type="text" placeholder="例：大会名、コンディションなど" maxlength="50"></div>' +
+      '<div class="fg"><label class="lbl">動画URL（任意）</label>' +
+        '<input class="inp" id="ivideo" type="url" placeholder="例：https://youtu.be/xxxx" autocomplete="off" inputmode="url"></div>' +
       '<button class="btn" data-action="add-rec">記録を保存</button>' +
     '</div>';
 }
@@ -533,14 +560,19 @@ function addRec() {
   if (!S.selAth) { toast('選手を選んでください'); return; }
   var notel = document.getElementById('inote');
   var note = notel ? notel.value.trim() : '';
+  var videoel = document.getElementById('ivideo');
+  var video = videoel ? videoel.value.trim() : '';
   var prev = getPB(S.selAth, ev);
   var isPB = !prev || (isField(ev) ? tm > prev.time : tm < prev.time);
-  S.records.push({ id: uid(), athleteId: S.selAth, event: ev, date: dt, time: tm, note: note });
+  var rec = { id: uid(), athleteId: S.selAth, event: ev, date: dt, time: tm, note: note };
+  if (video) rec.video = video;
+  S.records.push(rec);
   save();
   if (iel) iel.value = '';
   if (itml) itml.value = '';
   if (itsl) itsl.value = '';
   if (notel) notel.value = '';
+  if (videoel) videoel.value = '';
   if (idel) idel.value = today();
   S.selEv = ''; S.showNewEv = false;
   renderPg();
@@ -589,6 +621,7 @@ function tabList() {
             '<div class="rtm">' + fmtRec(r.time, r.event) + '</div>' +
             '<div class="rdt">' + fmtDateFull(r.date) + '</div>' +
           '</div>' +
+          (r.video ? '<button class="play-btn" data-action="open-video" data-param="' + esc(r.video) + '" title="動画を見る">▶️</button>' : '') +
           '<button class="del" data-action="edit-rec" data-param="' + r.id + '" style="font-size:15px;margin-right:0">✏</button>' +
           '<button class="del" data-action="del-rec" data-param="' + r.id + '">×</button>' +
         '</div>';
@@ -650,6 +683,7 @@ function editRec(id) {
     '<div class="fg"><label class="lbl">日付</label><input class="inp" id="edit-date" type="date" value="' + r.date + '"></div>' +
     '<div class="fg"><label class="lbl">タイム / 記録</label>' + inputHtml + '</div>' +
     '<div class="fg"><label class="lbl">備考（任意）</label><input class="inp" id="edit-note" type="text" value="' + esc(r.note || '') + '" maxlength="50"></div>' +
+    '<div class="fg"><label class="lbl">動画URL（任意）</label><input class="inp" id="edit-video" type="url" value="' + esc(r.video || '') + '" placeholder="例：https://youtu.be/xxxx" autocomplete="off" inputmode="url"></div>' +
     '<button class="btn" data-action="save-edit" data-param="' + id + '">保存</button></div>';
   document.body.appendChild(overlay);
   overlay.addEventListener('click', function(e){ if (e.target === overlay) closeSettings(); });
@@ -672,9 +706,11 @@ function saveEdit(id) {
     var sv = sEl && sEl.value !== '' ? parseFloat(sEl.value) : null;
     tm = sv !== null ? mv * 60 + sv : null;
   }
+  var video = ((document.getElementById('edit-video') || {}).value || '').trim();
   if (!dt) { toast('日付を入力してください'); return; }
   if (tm === null) { toast('タイムを正しく入力してください'); return; }
   r.date = dt; r.time = tm; r.note = note;
+  if (video) r.video = video; else delete r.video;
   closeSettings(); save(); renderPg();
   toast('✅ 記録を更新しました');
 }
