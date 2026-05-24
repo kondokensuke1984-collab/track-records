@@ -571,7 +571,10 @@ function tabAdd() {
       '<div class="fg"><label class="lbl">備考（任意）</label>' +
         '<input class="inp" id="inote" type="text" placeholder="例：大会名、コンディションなど" maxlength="50"></div>' +
       '<div class="fg"><label class="lbl">動画URL（任意）</label>' +
-        '<input class="inp" id="ivideo" type="url" placeholder="YouTube または Googleフォトのリンク" autocomplete="off" inputmode="url"></div>' +
+        '<div style="display:flex;gap:8px;align-items:center">' +
+          '<input class="inp" id="ivideo" type="url" placeholder="YouTube または Googleフォトのリンク" autocomplete="off" inputmode="url" style="flex:1">' +
+          '<a href="https://photos.google.com" target="_blank" style="flex-shrink:0;background:#34a853;color:#fff;border:none;border-radius:8px;padding:8px 10px;font-size:13px;text-decoration:none;white-space:nowrap">📷 フォト</a>' +
+        '</div></div>' +
       '<label style="display:flex;align-items:center;gap:8px;padding:4px 0 12px;cursor:pointer;font-size:15px">' +
         '<input type="checkbox" id="imeet" style="width:18px;height:18px;accent-color:#1e3a8a"> 🏆 大会記録</label>' +
       '<button class="btn" data-action="add-rec">記録を保存</button>' +
@@ -769,7 +772,11 @@ function editRec(id) {
     '<div class="fg"><label class="lbl">日付</label><input class="inp" id="edit-date" type="date" value="' + r.date + '"></div>' +
     '<div class="fg"><label class="lbl">タイム / 記録</label>' + inputHtml + '</div>' +
     '<div class="fg"><label class="lbl">備考（任意）</label><input class="inp" id="edit-note" type="text" value="' + esc(r.note || '') + '" maxlength="50"></div>' +
-    '<div class="fg"><label class="lbl">動画URL（任意）</label><input class="inp" id="edit-video" type="url" value="' + esc(r.video || '') + '" placeholder="YouTube または Googleフォトのリンク" autocomplete="off" inputmode="url"></div>' +
+    '<div class="fg"><label class="lbl">動画URL（任意）</label>' +
+      '<div style="display:flex;gap:8px;align-items:center">' +
+        '<input class="inp" id="edit-video" type="url" value="' + esc(r.video || '') + '" placeholder="YouTube または Googleフォトのリンク" autocomplete="off" inputmode="url" style="flex:1">' +
+        '<a href="https://photos.google.com" target="_blank" style="flex-shrink:0;background:#34a853;color:#fff;border:none;border-radius:8px;padding:8px 10px;font-size:13px;text-decoration:none;white-space:nowrap">📷 フォト</a>' +
+      '</div></div>' +
     '<label style="display:flex;align-items:center;gap:8px;padding:4px 0 12px;cursor:pointer;font-size:15px">' +
       '<input type="checkbox" id="edit-meet" style="width:18px;height:18px;accent-color:#1e3a8a"' + (r.meet ? ' checked' : '') + '> 🏆 大会記録</label>' +
     '<button class="btn" data-action="save-edit" data-param="' + id + '">保存</button></div>';
