@@ -139,7 +139,14 @@ function mergeInto(src) {
   S.records = S.records.filter(function(r){ return !delSet[r.id]; });
   if (S.records.length !== before) changed = true;
   var ids = {}; S.records.forEach(function(r){ ids[r.id]=1; });
-  (src.records||[]).forEach(function(r){ if(!ids[r.id] && !delSet[r.id]){ S.records.push(r); changed=true; } });
+  (src.records||[]).forEach(function(r){
+    if(!ids[r.id] && !delSet[r.id]){ S.records.push(r); changed=true; }
+    else if(ids[r.id]) {
+      var loc = S.records.find(function(x){ return x.id === r.id; });
+      if(loc && r.video && !loc.video){ loc.video = r.video; changed=true; }
+      if(loc && r.analysis && !loc.analysis){ loc.analysis = r.analysis; changed=true; }
+    }
+  });
   var aids = {}; S.athletes.forEach(function(a){ aids[a.id]=1; });
   (src.athletes||[]).forEach(function(a){ if(!aids[a.id]){ S.athletes.push(a); changed=true; } });
   return changed;
