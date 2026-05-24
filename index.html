@@ -118,7 +118,7 @@ var S = {
   deleted: [],
   tab: 'add',
   selAth: null,
-  fAth: 'all', fEv: 'all', fSort: 'desc',
+  fAth: 'all', fEv: 'all', fSort: 'desc', fMeet: false,
   gAth: '', gEv: '',
   selEv: '', showNewEv: false,
 };
@@ -145,6 +145,7 @@ function mergeInto(src) {
       var loc = S.records.find(function(x){ return x.id === r.id; });
       if(loc && r.video && !loc.video){ loc.video = r.video; changed=true; }
       if(loc && r.analysis && !loc.analysis){ loc.analysis = r.analysis; changed=true; }
+      if(loc && r.meet && !loc.meet){ loc.meet = true; changed=true; }
     }
   });
   var aids = {}; S.athletes.forEach(function(a){ aids[a.id]=1; });
@@ -437,6 +438,7 @@ document.addEventListener('click', function(e) {
     case 'set-fa':   setFA(param);      break;
     case 'set-fe':   setFE(param);      break;
     case 'set-fs':   setFS(param);      break;
+    case 'tog-meet': S.fMeet = !S.fMeet; renderPg(); break;
     case 'del-rec':  delRec(param);     break;
     case 'edit-rec': editRec(param);    break;
     case 'save-edit': saveEdit(param);  break;
@@ -569,6 +571,8 @@ function tabAdd() {
         '<input class="inp" id="inote" type="text" placeholder="例：大会名、コンディションなど" maxlength="50"></div>' +
       '<div class="fg"><label class="lbl">動画URL（任意）</label>' +
         '<input class="inp" id="ivideo" type="url" placeholder="YouTube または Googleフォトのリンク" autocomplete="off" inputmode="url"></div>' +
+      '<label style="display:flex;align-items:center;gap:8px;padding:4px 0 12px;cursor:pointer;font-size:15px">' +
+        '<input type="checkbox" id="imeet" style="width:18px;height:18px;accent-color:#1e3a8a"> 🏆 大会記録</label>' +
       '<button class="btn" data-action="add-rec">記録を保存</button>' +
     '</div>';
 }
@@ -637,10 +641,13 @@ function addRec() {
   var note = notel ? notel.value.trim() : '';
   var videoel = document.getElementById('ivideo');
   var video = videoel ? videoel.value.trim() : '';
+  var meetel = document.getElementById('imeet');
+  var meet = meetel ? meetel.checked : false;
   var prev = getPB(S.selAth, ev);
   var isPB = !prev || (isField(ev) ? tm > prev.time : tm < prev.time);
   var rec = { id: uid(), athleteId: S.selAth, event: ev, date: dt, time: tm, note: note };
   if (video) rec.video = video;
+  if (meet) rec.meet = true;
   S.records.push(rec);
   save();
   if (iel) iel.value = '';
@@ -670,6 +677,7 @@ function tabList() {
   });
   if (S.fAth !== 'all') rs = rs.filter(function(r){ return r.athleteId === S.fAth; });
   if (S.fEv  !== 'all') rs = rs.filter(function(r){ return r.event === S.fEv; });
+  if (S.fMeet) rs = rs.filter(function(r){ return r.meet; });
 
   var pbSet = new Set();
   S.athletes.forEach(function(a){ evs.forEach(function(ev){ var p = getPB(a.id, ev); if (p) pbSet.add(p.id); }); });
@@ -689,7 +697,7 @@ function tabList() {
         return '<div class="ri">' +
           '<div class="rdot" style="background:' + (a ? a.color : '#999') + '"></div>' +
           '<div class="rinfo">' +
-            '<div class="rev">' + esc(r.event) + (pbSet.has(r.id) ? '<span class="pb">PB</span>' : '') + (r.analysis ? '<span class="ai-badge" data-action="ai-analysis" data-param="' + r.id + '">AI✓</span>' : '') + '</div>' +
+            '<div class="rev">' + esc(r.event) + (pbSet.has(r.id) ? '<span class="pb">PB</span>' : '') + (r.meet ? '<span class="pb" style="background:#f59e0b">🏆</span>' : '') + (r.analysis ? '<span class="ai-badge" data-action="ai-analysis" data-param="' + r.id + '">AI✓</span>' : '') + '</div>' +
             '<div class="rath">' + esc(a ? a.name : '?') + (r.note ? ' ・ ' + esc(r.note) : '') + '</div>' +
           '</div>' +
           '<div style="text-align:right;margin-right:4px">' +
@@ -705,7 +713,8 @@ function tabList() {
 
   var sortChips =
     '<button class="chip' + (S.fSort === 'desc' ? ' on' : '') + '" data-action="set-fs" data-param="desc">新しい順</button>' +
-    '<button class="chip' + (S.fSort === 'asc'  ? ' on' : '') + '" data-action="set-fs" data-param="asc">古い順</button>';
+    '<button class="chip' + (S.fSort === 'asc'  ? ' on' : '') + '" data-action="set-fs" data-param="asc">古い順</button>' +
+    '<button class="chip' + (S.fMeet ? ' on' : '') + '" data-action="tog-meet">🏆 大会のみ</button>';
 
   return '<div class="stitle">記録一覧</div>' +
     '<div class="ssub">合計 ' + S.records.length + ' 件の記録</div>' +
@@ -760,6 +769,8 @@ function editRec(id) {
     '<div class="fg"><label class="lbl">タイム / 記録</label>' + inputHtml + '</div>' +
     '<div class="fg"><label class="lbl">備考（任意）</label><input class="inp" id="edit-note" type="text" value="' + esc(r.note || '') + '" maxlength="50"></div>' +
     '<div class="fg"><label class="lbl">動画URL（任意）</label><input class="inp" id="edit-video" type="url" value="' + esc(r.video || '') + '" placeholder="YouTube または Googleフォトのリンク" autocomplete="off" inputmode="url"></div>' +
+    '<label style="display:flex;align-items:center;gap:8px;padding:4px 0 12px;cursor:pointer;font-size:15px">' +
+      '<input type="checkbox" id="edit-meet" style="width:18px;height:18px;accent-color:#1e3a8a"' + (r.meet ? ' checked' : '') + '> 🏆 大会記録</label>' +
     '<button class="btn" data-action="save-edit" data-param="' + id + '">保存</button></div>';
   document.body.appendChild(overlay);
   overlay.addEventListener('click', function(e){ if (e.target === overlay) closeSettings(); });
@@ -783,10 +794,13 @@ function saveEdit(id) {
     tm = sv !== null ? mv * 60 + sv : null;
   }
   var video = ((document.getElementById('edit-video') || {}).value || '').trim();
+  var meetEl = document.getElementById('edit-meet');
+  var meet = meetEl ? meetEl.checked : false;
   if (!dt) { toast('日付を入力してください'); return; }
   if (tm === null) { toast('タイムを正しく入力してください'); return; }
   r.date = dt; r.time = tm; r.note = note;
   if (video) r.video = video; else delete r.video;
+  if (meet) r.meet = true; else delete r.meet;
   closeSettings(); save(); renderPg();
   toast('✅ 記録を更新しました');
 }
