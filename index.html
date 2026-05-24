@@ -221,6 +221,7 @@ function load() {
     if (S.athletes[0]) { S.selAth = S.athletes[0].id; S.gAth = S.athletes[0].id; }
     var evs = getEvents(); if (evs[0]) S.gEv = evs[0];
   } catch(e) {}
+  checkAppVersion();
   syncFromCloud();
   setInterval(function() {
     fetchCloud()
@@ -231,6 +232,21 @@ function load() {
       })
       .catch(function(){});
   }, 30000);
+}
+function checkAppVersion() {
+  fetch('https://api.github.com/repos/kondokensuke1984-collab/track-records/commits?path=index.html&per_page=1')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (!data || !data[0]) return;
+      var sha = data[0].sha;
+      var stored = localStorage.getItem('app_ver');
+      if (!stored) { localStorage.setItem('app_ver', sha); return; }
+      if (stored !== sha) {
+        localStorage.setItem('app_ver', sha);
+        location.reload(true);
+      }
+    })
+    .catch(function(){});
 }
 function saveLocal() {
   localStorage.setItem('trk_v2', JSON.stringify({ athletes: S.athletes, records: S.records, deleted: S.deleted }));
