@@ -812,7 +812,9 @@ function runGeminiAnalysis(id) {
   var r = S.records.find(function(x){ return x.id === id; });
   if (!r || !r.video) return;
   var a = ath(r.athleteId);
-  var prompt = '以下のYouTube動画を見てください：\n' + r.video + '\n\n' +
+  var prompt = (isGooglePhotos(r.video)
+    ? '共有された動画を見てください。\n\n'
+    : '以下のYouTube動画を見てください：\n' + r.video + '\n\n') +
     (a ? a.name : '選手') + 'さんの' + r.event + 'の動画を分析してください。\n' +
     '小学生でもわかりやすい言葉で、次の3つを教えてください：\n' +
     '①よかったところ（具体的にほめてください）\n' +
