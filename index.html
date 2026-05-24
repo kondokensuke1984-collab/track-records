@@ -818,15 +818,19 @@ async function runGeminiAnalysis(id) {
     '②もっとよくなるポイント（どうすればいいか具体的に）\n' +
     '③次の練習で意識してほしいこと（1〜2つに絞って）\n' +
     'やさしく励ましながら、前向きな気持ちになれる文章でお願いします。';
+  function showErr(msg) {
+    var ta = document.getElementById('ai-result');
+    if (ta) ta.value = '⚠️ エラー: ' + msg;
+  }
   try {
     var res = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + key,
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + key,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [
-            { fileData: { mimeType: 'video/*', fileUri: videoUrl } },
+            { fileData: { fileUri: videoUrl } },
             { text: prompt }
           ]}]
         })
@@ -834,7 +838,7 @@ async function runGeminiAnalysis(id) {
     );
     var data = await res.json();
     if (!res.ok) {
-      toast('エラー: ' + ((data.error && data.error.message) || '分析できませんでした'));
+      showErr((data.error && data.error.message) || '分析できませんでした');
     } else {
       var text = (data.candidates && data.candidates[0] && data.candidates[0].content &&
         data.candidates[0].content.parts && data.candidates[0].content.parts[0] &&
@@ -844,7 +848,7 @@ async function runGeminiAnalysis(id) {
       toast('✅ 分析完了！');
     }
   } catch(e) {
-    toast('通信エラーが発生しました');
+    showErr('通信エラー: ' + e.message);
   } finally {
     if (btn) { btn.textContent = '✨ Geminiで動画を分析する'; btn.disabled = false; }
   }
