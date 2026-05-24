@@ -228,7 +228,7 @@ function load() {
       .then(function(cloud) {
         if (!cloud) return;
         var changed = mergeInto(cloud);
-        if (changed) { saveLocal(); renderPg(); showSyncBadge('✓'); }
+        if (changed) { saveLocal(); if (!document.activeElement || document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') { renderPg(); } showSyncBadge('✓'); }
       })
       .catch(function(){});
   }, 30000);
