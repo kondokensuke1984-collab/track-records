@@ -332,9 +332,14 @@ window.onYouTubeIframeAPIReady = function() {
   if (_ytPending) { _ytPending(); _ytPending = null; }
 };
 
+function isGooglePhotos(url) {
+  return url && (url.indexOf('photos.app.goo.gl') !== -1 || url.indexOf('photos.google.com') !== -1);
+}
+
 function openVideoModal(url) {
   var vid = ytId(url);
-  if (!vid) { toast('動画URLが無効です'); return; }
+  if (!vid && !isGooglePhotos(url)) { toast('動画URLが無効です'); return; }
+  if (isGooglePhotos(url)) { window.open(url, '_blank'); return; }
   var existing = document.getElementById('modal-overlay');
   if (existing) existing.remove();
   var overlay = document.createElement('div');
@@ -530,7 +535,7 @@ function tabAdd() {
       '<div class="fg"><label class="lbl">備考（任意）</label>' +
         '<input class="inp" id="inote" type="text" placeholder="例：大会名、コンディションなど" maxlength="50"></div>' +
       '<div class="fg"><label class="lbl">動画URL（任意）</label>' +
-        '<input class="inp" id="ivideo" type="url" placeholder="例：https://youtu.be/xxxx" autocomplete="off" inputmode="url"></div>' +
+        '<input class="inp" id="ivideo" type="url" placeholder="YouTube または Googleフォトのリンク" autocomplete="off" inputmode="url"></div>' +
       '<button class="btn" data-action="add-rec">記録を保存</button>' +
     '</div>';
 }
@@ -721,7 +726,7 @@ function editRec(id) {
     '<div class="fg"><label class="lbl">日付</label><input class="inp" id="edit-date" type="date" value="' + r.date + '"></div>' +
     '<div class="fg"><label class="lbl">タイム / 記録</label>' + inputHtml + '</div>' +
     '<div class="fg"><label class="lbl">備考（任意）</label><input class="inp" id="edit-note" type="text" value="' + esc(r.note || '') + '" maxlength="50"></div>' +
-    '<div class="fg"><label class="lbl">動画URL（任意）</label><input class="inp" id="edit-video" type="url" value="' + esc(r.video || '') + '" placeholder="例：https://youtu.be/xxxx" autocomplete="off" inputmode="url"></div>' +
+    '<div class="fg"><label class="lbl">動画URL（任意）</label><input class="inp" id="edit-video" type="url" value="' + esc(r.video || '') + '" placeholder="YouTube または Googleフォトのリンク" autocomplete="off" inputmode="url"></div>' +
     '<button class="btn" data-action="save-edit" data-param="' + id + '">保存</button></div>';
   document.body.appendChild(overlay);
   overlay.addEventListener('click', function(e){ if (e.target === overlay) closeSettings(); });
