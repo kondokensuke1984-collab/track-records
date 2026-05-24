@@ -118,7 +118,7 @@ var S = {
   deleted: [],
   tab: 'add',
   selAth: null,
-  fAth: 'all', fEv: 'all', fSort: 'desc', fMeet: false,
+  fAth: 'all', fEv: 'all', fSort: 'desc', fMeet: false, gMeet: false,
   gAth: '', gEv: '',
   selEv: '', showNewEv: false,
 };
@@ -438,7 +438,8 @@ document.addEventListener('click', function(e) {
     case 'set-fa':   setFA(param);      break;
     case 'set-fe':   setFE(param);      break;
     case 'set-fs':   setFS(param);      break;
-    case 'tog-meet': S.fMeet = !S.fMeet; renderPg(); break;
+    case 'tog-meet':  S.fMeet = !S.fMeet; renderPg(); break;
+    case 'tog-gmeet': S.gMeet = !S.gMeet; renderPg(); break;
     case 'del-rec':  delRec(param);     break;
     case 'edit-rec': editRec(param);    break;
     case 'save-edit': saveEdit(param);  break;
@@ -952,6 +953,7 @@ function tabGraph() {
       '<select id="gsa">' + athOpts + '</select>' +
       '<select id="gse">' + evOpts + '</select>' +
     '</div>' +
+    '<div class="chips"><button class="chip' + (S.gMeet ? ' on' : '') + '" data-action="tog-gmeet">🏆 大会のみ</button></div>' +
     '<div class="card"><div class="ctnr"><canvas id="gc"></canvas></div></div>';
 }
 
@@ -968,7 +970,7 @@ function drawChart() {
   var ev = S.gEv; if (!ev) return;
   var aths = S.gAth === 'all' ? S.athletes : S.athletes.filter(function(a){ return a.id === S.gAth; });
   var datasets = aths.map(function(a) {
-    var rs = S.records.filter(function(r){ return r.athleteId === a.id && r.event === ev; })
+    var rs = S.records.filter(function(r){ return r.athleteId === a.id && r.event === ev && (!S.gMeet || r.meet); })
       .sort(function(x, y){ return x.date < y.date ? -1 : 1; });
     var byDate = {};
     rs.forEach(function(r){ if (!byDate[r.date] || r.time < byDate[r.date]) byDate[r.date] = r.time; });
