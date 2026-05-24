@@ -118,7 +118,7 @@ var S = {
   deleted: [],
   tab: 'add',
   selAth: null,
-  fAth: 'all', fEv: 'all', fSort: 'desc', fMeet: false, gMeet: false,
+  fAth: 'all', fEv: 'all', fSort: 'desc', fMeet: false, gMeet: false, bMeet: false,
   gAth: '', gEv: '',
   selEv: '', showNewEv: false,
 };
@@ -440,6 +440,7 @@ document.addEventListener('click', function(e) {
     case 'set-fs':   setFS(param);      break;
     case 'tog-meet':  S.fMeet = !S.fMeet; renderPg(); break;
     case 'tog-gmeet': S.gMeet = !S.gMeet; renderPg(); break;
+    case 'tog-bmeet': S.bMeet = !S.bMeet; renderPg(); break;
     case 'del-rec':  delRec(param);     break;
     case 'edit-rec': editRec(param);    break;
     case 'save-edit': saveEdit(param);  break;
@@ -910,8 +911,16 @@ function tabBest() {
       '<div class="stc"><div class="stv">' + thisWeek + '</div><div class="stl">今週の記録</div></div>' +
     '</div>';
   var medals = ['🥇','🥈','🥉'];
+  function getMeetPB(aId, ev) {
+    var rs = S.records.filter(function(r){ return r.athleteId === aId && r.event === ev && r.meet && r.note.indexOf('ファール') === -1; });
+    if (!rs.length) return null;
+    return isField(ev)
+      ? rs.reduce(function(b, r){ return r.time > b.time ? r : b; }, rs[0])
+      : rs.reduce(function(b, r){ return r.time < b.time ? r : b; }, rs[0]);
+  }
+  var getPBfn = S.bMeet ? getMeetPB : getPB;
   var evCards = evs.map(function(ev) {
-    var bests = S.athletes.map(function(a){ return { a: a, pb: getPB(a.id, ev) }; })
+    var bests = S.athletes.map(function(a){ return { a: a, pb: getPBfn(a.id, ev) }; })
       .filter(function(x){ return x.pb; })
       .sort(function(x, y){ return isField(ev) ? y.pb.time - x.pb.time : x.pb.time - y.pb.time; });
     if (!bests.length) return '';
@@ -939,7 +948,10 @@ function tabBest() {
     return '<div class="card"><div class="evhdr"><span>🏃</span><span>' + esc(ev) + '</span></div>' + rowsHtml + '</div>';
   }).join('');
 
-  return '<div class="stitle">自己ベスト</div><div class="ssub">各種目の最高記録</div>' + statsHtml + evCards;
+  var meetToggle = '<div class="chips"><button class="chip' + (S.bMeet ? ' on' : '') + '" data-action="tog-bmeet">🏆 大会ベストのみ</button></div>';
+  var title = S.bMeet ? '大会ベスト' : '自己ベスト';
+  var sub   = S.bMeet ? '大会記録の最高タイム' : '各種目の最高記録';
+  return '<div class="stitle">' + title + '</div><div class="ssub">' + sub + '</div>' + meetToggle + statsHtml + evCards;
 }
 
 // ── GRAPH TAB ──────────────────────────────────────────────────────────
