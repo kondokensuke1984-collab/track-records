@@ -97,6 +97,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .icon-btn:active{opacity:1}
 .play-btn{background:none;border:none;cursor:pointer;font-size:15px;padding:4px 6px;opacity:.7;line-height:1;flex-shrink:0}
 .play-btn:active{opacity:1}
+.ai-badge{font-size:11px;font-weight:700;background:#f0fdf4;color:#16a34a;border-radius:6px;padding:2px 6px;cursor:pointer;border:none;flex-shrink:0}
+.ai-result-txt{font-size:13px;line-height:1.8;white-space:pre-wrap;color:var(--text);padding:4px 0}
 .add-ath-form{margin-top:14px;display:flex;gap:8px}
 .add-ath-form .inp{flex:1;margin:0}
 .add-ath-form .sbtn{padding:12px 16px;background:var(--blue);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap}
@@ -400,7 +402,10 @@ document.addEventListener('click', function(e) {
     case 'del-rec':  delRec(param);     break;
     case 'edit-rec': editRec(param);    break;
     case 'save-edit': saveEdit(param);  break;
-    case 'open-video': openVideoModal(param); break;
+    case 'open-video':     openVideoModal(param);    break;
+    case 'ai-analysis':    openAnalysisModal(param); break;
+    case 'run-ai':         runGeminiAnalysis(param); break;
+    case 'save-analysis':  saveAnalysis(param);      break;
     case 'csv':      exportCSV();       break;
     case 'reset':        resetAll();           break;
     case 'open-settings': openSettings();       break;
@@ -646,7 +651,7 @@ function tabList() {
         return '<div class="ri">' +
           '<div class="rdot" style="background:' + (a ? a.color : '#999') + '"></div>' +
           '<div class="rinfo">' +
-            '<div class="rev">' + esc(r.event) + (pbSet.has(r.id) ? '<span class="pb">PB</span>' : '') + '</div>' +
+            '<div class="rev">' + esc(r.event) + (pbSet.has(r.id) ? '<span class="pb">PB</span>' : '') + (r.analysis ? '<span class="ai-badge" data-action="ai-analysis" data-param="' + r.id + '">AI✓</span>' : '') + '</div>' +
             '<div class="rath">' + esc(a ? a.name : '?') + (r.note ? ' ・ ' + esc(r.note) : '') + '</div>' +
           '</div>' +
           '<div style="text-align:right;margin-right:4px">' +
@@ -654,6 +659,7 @@ function tabList() {
             '<div class="rdt">' + fmtDateFull(r.date) + '</div>' +
           '</div>' +
           (r.video ? '<button class="play-btn" data-action="open-video" data-param="' + esc(r.video) + '" title="動画を見る">▶️</button>' : '') +
+          (r.video ? '<button class="play-btn" data-action="ai-analysis" data-param="' + r.id + '" title="AI分析">🤖</button>' : '') +
           '<button class="del" data-action="edit-rec" data-param="' + r.id + '" style="font-size:15px;margin-right:0">✏</button>' +
           '<button class="del" data-action="del-rec" data-param="' + r.id + '">×</button>' +
         '</div>';
@@ -763,6 +769,95 @@ function resetAll() {
   if (!confirm('すべての記録を削除しますか？この操作は元に戻せません。')) return;
   if (!confirm('本当に全削除しますか？')) return;
   S.records = []; save(); renderPg(); toast('リセットしました');
+}
+
+// ── GEMINI AI ANALYSIS ────────────────────────────────────────────────
+function openAnalysisModal(id) {
+  var r = S.records.find(function(x){ return x.id === id; });
+  if (!r) return;
+  var existing = document.getElementById('modal-overlay');
+  if (existing) existing.remove();
+  var key = localStorage.getItem('trk_gemini_key') || '';
+  var analysis = r.analysis || '';
+  var overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'modal-overlay';
+  var a = ath(r.athleteId);
+  overlay.innerHTML = '<div class="modal">' +
+    '<div class="modal-hdr"><div class="modal-title">🤖 AI動画分析</div>' +
+    '<button class="modal-close" data-action="close-settings">×</button></div>' +
+    '<div style="font-size:13px;color:var(--muted);margin-bottom:12px">' + esc(a ? a.name : '') + ' / ' + esc(r.event) + ' / ' + fmtDateFull(r.date) + '</div>' +
+    (r.video
+      ? '<div class="fg"><label class="lbl">Gemini APIキー</label>' +
+        '<input class="inp" id="ai-key" type="password" placeholder="AIzaSy..." value="' + esc(key) + '" autocomplete="off"></div>' +
+        '<button class="btn" id="ai-btn" data-action="run-ai" data-param="' + id + '" style="margin-bottom:16px">✨ Geminiで動画を分析する</button>'
+      : '<div style="font-size:13px;color:var(--muted);background:var(--bg);border-radius:8px;padding:10px;margin-bottom:12px">動画URLを登録すると自動分析できます</div>') +
+    '<div class="fg"><label class="lbl">分析結果（自動入力 または 貼り付け）</label>' +
+    '<textarea class="inp" id="ai-result" rows="10" style="resize:vertical;font-size:14px;line-height:1.8" placeholder="Geminiの分析結果がここに表示されます。手動で貼り付けもできます。">' + esc(analysis) + '</textarea></div>' +
+    '<button class="btn" data-action="save-analysis" data-param="' + id + '">💾 保存する</button>' +
+  '</div>';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', function(e){ if (e.target === overlay) closeSettings(); });
+}
+
+async function runGeminiAnalysis(id) {
+  var r = S.records.find(function(x){ return x.id === id; });
+  if (!r || !r.video) return;
+  var keyEl = document.getElementById('ai-key');
+  var key = keyEl ? keyEl.value.trim() : '';
+  if (!key) { toast('APIキーを入力してください'); if (keyEl) keyEl.focus(); return; }
+  localStorage.setItem('trk_gemini_key', key);
+  var btn = document.getElementById('ai-btn');
+  if (btn) { btn.textContent = '⏳ 分析中…（少し時間がかかります）'; btn.disabled = true; }
+  var a = ath(r.athleteId);
+  var vid = ytId(r.video);
+  var videoUrl = vid ? 'https://www.youtube.com/watch?v=' + vid : r.video;
+  var prompt = (a ? a.name : '選手') + 'さんの' + r.event + 'の動画を分析してください。\n' +
+    '小学生でもわかりやすい言葉で、次の3つを教えてください：\n' +
+    '①よかったところ（具体的にほめてください）\n' +
+    '②もっとよくなるポイント（どうすればいいか具体的に）\n' +
+    '③次の練習で意識してほしいこと（1〜2つに絞って）\n' +
+    'やさしく励ましながら、前向きな気持ちになれる文章でお願いします。';
+  try {
+    var res = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + key,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [
+            { fileData: { mimeType: 'video/*', fileUri: videoUrl } },
+            { text: prompt }
+          ]}]
+        })
+      }
+    );
+    var data = await res.json();
+    if (!res.ok) {
+      toast('エラー: ' + ((data.error && data.error.message) || '分析できませんでした'));
+    } else {
+      var text = (data.candidates && data.candidates[0] && data.candidates[0].content &&
+        data.candidates[0].content.parts && data.candidates[0].content.parts[0] &&
+        data.candidates[0].content.parts[0].text) || '';
+      var ta = document.getElementById('ai-result');
+      if (ta) ta.value = text;
+      toast('✅ 分析完了！');
+    }
+  } catch(e) {
+    toast('通信エラーが発生しました');
+  } finally {
+    if (btn) { btn.textContent = '✨ Geminiで動画を分析する'; btn.disabled = false; }
+  }
+}
+
+function saveAnalysis(id) {
+  var r = S.records.find(function(x){ return x.id === id; });
+  if (!r) return;
+  var ta = document.getElementById('ai-result');
+  var text = ta ? ta.value.trim() : '';
+  if (text) r.analysis = text; else delete r.analysis;
+  closeSettings(); save(); renderPg();
+  toast('✅ 分析結果を保存しました');
 }
 
 // ── BEST TAB ───────────────────────────────────────────────────────────
