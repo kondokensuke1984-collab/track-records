@@ -793,8 +793,12 @@ function openAnalysisModal(id) {
     '<div style="font-size:13px;color:var(--muted);margin-bottom:14px">' + esc(a ? a.name : '') + ' / ' + esc(r.event) + ' / ' + fmtDateFull(r.date) + '</div>' +
     (r.video
       ? '<button class="btn" id="ai-btn" data-action="run-ai" data-param="' + id + '" style="margin-bottom:8px">✨ Geminiで分析する</button>' +
-        '<div style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:8px">① プロンプトがコピーされます &nbsp;② Geminiが開きます &nbsp;③ 貼り付けて送信</div>' +
-        '<div style="font-size:12px;background:#fef9c3;color:#854d0e;border-radius:8px;padding:8px 10px;margin-bottom:16px">⚠️ 限定公開動画はURLでは分析できません。Geminiの <strong>＋ボタン</strong> から動画ファイルを直接アップロードしてください</div>'
+        (isGooglePhotos(r.video)
+          ? '<div style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:8px">① プロンプトがコピーされます &nbsp;② Googleフォトが開きます &nbsp;③ 共有→Geminiを選択</div>' +
+            '<div style="font-size:12px;background:#dbeafe;color:#1e40af;border-radius:8px;padding:8px 10px;margin-bottom:16px">📂 フォトの動画が開くので、共有ボタン → <strong>Gemini</strong> を選んでプロンプトを貼り付けてください</div>'
+          : '<div style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:8px">① プロンプトがコピーされます &nbsp;② Geminiが開きます &nbsp;③ 貼り付けて送信</div>' +
+            '<div style="font-size:12px;background:#fef9c3;color:#854d0e;border-radius:8px;padding:8px 10px;margin-bottom:16px">⚠️ 限定公開動画はURLでは分析できません。Geminiの <strong>＋ボタン</strong> から直接アップロードしてください</div>'
+        )
       : '<div style="font-size:13px;color:var(--muted);background:var(--bg);border-radius:8px;padding:10px;margin-bottom:12px">動画URLを登録するとプロンプトが自動作成されます</div>') +
     '<div class="fg"><label class="lbl">Geminiの回答をここに貼り付け</label>' +
     '<textarea class="inp" id="ai-result" rows="10" style="resize:vertical;font-size:14px;line-height:1.8" placeholder="GeminiからコピーしたAIの回答をここに貼り付けてください">' + esc(analysis) + '</textarea></div>' +
@@ -816,8 +820,13 @@ function runGeminiAnalysis(id) {
     '③次の練習で意識してほしいこと（1〜2つに絞って）\n' +
     'やさしく励ましながら、前向きな気持ちになれる文章でお願いします。';
   navigator.clipboard.writeText(prompt).catch(function(){});
-  window.open('https://gemini.google.com/app', '_blank');
-  toast('📋 プロンプトをコピーしました！Geminiに貼り付けてください');
+  if (isGooglePhotos(r.video)) {
+    window.open(r.video, '_blank');
+    toast('📋 プロンプトをコピーしました！フォトからGeminiに共有してください');
+  } else {
+    window.open('https://gemini.google.com/app', '_blank');
+    toast('📋 プロンプトをコピーしました！Geminiに貼り付けてください');
+  }
 }
 
 function saveAnalysis(id) {
