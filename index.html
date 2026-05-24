@@ -323,6 +323,13 @@ function ytId(url) {
   var m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([A-Za-z0-9_-]{11})/);
   return m ? m[1] : null;
 }
+var _ytReady = false;
+var _ytPending = null;
+window.onYouTubeIframeAPIReady = function() {
+  _ytReady = true;
+  if (_ytPending) { _ytPending(); _ytPending = null; }
+};
+
 function openVideoModal(url) {
   var vid = ytId(url);
   if (!vid) { toast('動画URLが無効です'); return; }
@@ -340,27 +347,29 @@ function openVideoModal(url) {
   document.body.appendChild(overlay);
   overlay.addEventListener('click', function(e){ if (e.target === overlay) closeSettings(); });
 
-  function initYTPlayer() {
+  function createPlayer() {
     var el = document.getElementById('yt-player');
     if (!el) return;
     new YT.Player('yt-player', {
       videoId: vid,
       playerVars: { rel: 0 },
       events: {
-        onStateChange: function(e) {
-          if (e.data === YT.PlayerState.ENDED) closeSettings();
+        onStateChange: function(ev) {
+          if (ev.data === YT.PlayerState.ENDED) closeSettings();
         }
       }
     });
   }
 
-  if (window.YT && window.YT.Player) {
-    initYTPlayer();
+  if (_ytReady) {
+    createPlayer();
   } else {
-    var tag = document.createElement('script');
-    tag.src = 'https://www.youtube.com/iframe_api';
-    document.head.appendChild(tag);
-    window.onYouTubeIframeAPIReady = initYTPlayer;
+    _ytPending = createPlayer;
+    if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
+      var tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      document.head.appendChild(tag);
+    }
   }
 }
 
