@@ -243,10 +243,17 @@ function checkAppVersion() {
       if (!stored) { localStorage.setItem('app_ver', sha); return; }
       if (stored !== sha) {
         localStorage.setItem('app_ver', sha);
-        location.reload(true);
+        showUpdateBanner();
       }
     })
     .catch(function(){});
+}
+function showUpdateBanner() {
+  var b = document.createElement('div');
+  b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#1e3a8a;color:#fff;text-align:center;padding:14px 16px;font-size:14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.3);';
+  b.innerHTML = '🔄 アプリが更新されました。<strong>タップして最新版に</strong>';
+  b.addEventListener('click', function(){ location.reload(true); });
+  document.body.appendChild(b);
 }
 function saveLocal() {
   localStorage.setItem('trk_v2', JSON.stringify({ athletes: S.athletes, records: S.records, deleted: S.deleted }));
