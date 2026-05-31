@@ -344,8 +344,9 @@ var GOALS = {
   }
 };
 function isField(ev) { return FIELD_EVENTS.some(function(f){ return ev.indexOf(f) !== -1; }); }
+function isFoul(r) { return /^ファール($|（)/.test((r.note || '').trim()); }
 function getPB(aId, ev) {
-  var rs = S.records.filter(function(r){ return r.athleteId === aId && r.event === ev && r.note.indexOf('ファール') === -1; });
+  var rs = S.records.filter(function(r){ return r.athleteId === aId && r.event === ev && !isFoul(r); });
   if (!rs.length) return null;
   return isField(ev)
     ? rs.reduce(function(b, r){ return r.time > b.time ? r : b; }, rs[0])
@@ -912,7 +913,7 @@ function tabBest() {
     '</div>';
   var medals = ['🥇','🥈','🥉'];
   function getMeetPB(aId, ev) {
-    var rs = S.records.filter(function(r){ return r.athleteId === aId && r.event === ev && r.meet && r.note.indexOf('ファール') === -1; });
+    var rs = S.records.filter(function(r){ return r.athleteId === aId && r.event === ev && r.meet && !isFoul(r); });
     if (!rs.length) return null;
     return isField(ev)
       ? rs.reduce(function(b, r){ return r.time > b.time ? r : b; }, rs[0])
